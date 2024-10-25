@@ -1,0 +1,11 @@
+<div class="visitorCustomVariablesExtended">
+    {% for id,customVariable in visitInfo.getColumn('customVariablesExtended') %}
+        {% set name='customVariableName' ~ id %}
+        {% set value='customVariableValue' ~ id %}
+        <br/>
+        <abbr class="visitorLogTooltip" title="{{ 'CustomVariablesExtended_CustomVariables'|translate }} ({{ 'CustomVariablesExtended_Index'|translate }} {{ id }})">
+            {{ customVariable[name]|truncate(30) }}
+        </abbr>
+        {% if customVariable[value]|length > 0 %}: {{ customVariable[value]|truncate(50) }}{% endif %}
+    {% endfor %}
+</div>

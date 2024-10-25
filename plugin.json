@@ -1,0 +1,31 @@
+{
+    "name": "CustomVariablesExtended",
+    "description": "This plugin extends the amount of possible custom variables to 100.",
+    "version": "1.0.0",
+    "theme": false,
+    "require": {
+        "matomo": ">=5.1.1-stable,<6.0.0-b1"
+    },
+    "authors": [{
+        "name": "Michael Roosz",
+        "email": "michael.roosz@web.de"
+    }],
+    "support": {
+        "email": "",
+        "issues": "",
+        "forum": "",
+        "irc": "",
+        "wiki": "",
+        "source": "",
+        "docs": "",
+        "rss": ""
+    },
+    "homepage": "https:\/\/github.com\/MichaelRoosz\/plugin-CustomVariablesExtended",
+    "license": "GPL v3+",
+    "keywords": [
+        "matomo",
+        "custom",
+        "variables",
+        "extended"
+    ]
+}
