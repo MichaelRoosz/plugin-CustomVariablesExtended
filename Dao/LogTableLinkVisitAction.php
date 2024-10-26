@@ -59,6 +59,7 @@ class LogTableLinkVisitAction
                   `name` VARCHAR(" . CustomVariablesExtended::MAX_LENGTH_VARIABLE_NAME . ") DEFAULT NULL,
                   `value` VARCHAR(" . CustomVariablesExtended::MAX_LENGTH_VARIABLE_VALUE . ") DEFAULT NULL,
                   PRIMARY KEY (`idlink_va`, `index`),
+                  KEY (`idvisit`),
                   KEY (`idsite`, `index`, `name`, `idvisit`, `idlink_va`)";
 
         DbHelper::createTable($this->tableName, $table);
