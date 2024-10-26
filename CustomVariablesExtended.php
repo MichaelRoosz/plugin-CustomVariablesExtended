@@ -2,11 +2,14 @@
 
 namespace Piwik\Plugins\CustomVariablesExtended;
 
+use Exception;
 use Piwik\Common;
 use Piwik\Plugin;
 use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableConversion;
 use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableLinkVisitAction;
 use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableVisit;
+use Piwik\Plugins\CustomVariablesExtended\Reports\GetCustomVariables;
+use Piwik\Plugins\CustomVariablesExtended\Tracker\CustomVariablesExtendedRequestProcessor;
 
 class CustomVariablesExtended extends Plugin
 {
@@ -20,6 +23,10 @@ class CustomVariablesExtended extends Plugin
     public const SCOPE_VISIT = 'visit';
     public const SCOPE_CONVERSION = 'conversion';
 
+    public const SCOPE_ID_PAGE = 1;
+    public const SCOPE_ID_VISIT = 2;
+    public const SCOPE_ID_CONVERSION = 3;
+
     public function isTrackerPlugin()
     {
         return true;
@@ -32,6 +39,9 @@ class CustomVariablesExtended extends Plugin
             'AssetManager.getStylesheetFiles'  => 'getStylesheetFiles',
             'Dimension.addDimensions' => 'addDimensions',
             'Actions.getCustomActionDimensionFieldsAndJoins' => 'provideActionDimensionFields',
+            'Tracker.newConversionInformation' => 'newConversionInformation',
+            'Goals.getReportsWithGoalMetrics'  => 'getReportsWithGoalMetrics',
+            'Db.getTablesInstalled' => 'getTablesInstalled',
         ];
     }
 
@@ -96,5 +106,78 @@ class CustomVariablesExtended extends Plugin
                     . ' AND log_link_visit_action.idlink_va = cv_lva_'. $i . '.idlink_va'
                     . ' AND cv_lva_'. $i . '.index = ' . $i;
         }
+    }
+
+    public function newConversionInformation(&$conversion, $visitInformation, $request, $action)
+    {
+        $processor = new CustomVariablesExtendedRequestProcessor();
+        $processor->onNewConversionInformation($conversion, $visitInformation, $request, $action);
+    }
+
+    public function getReportsWithGoalMetrics(&$reportsWithGoals)
+    {
+        $report = new GetCustomVariables();
+        $report->prepareForGoalMetrics();
+
+        $reportToInsert = [
+            'category' => $report->getCategoryId(),
+            'name'     => $report->getName(),
+            'module'   => $report->getModule(),
+            'action'   => $report->getAction(),
+            'parameters' => $report->getParameters()
+        ];
+
+        $newReportsWithGoals = [];
+        $didInsert = false;
+
+        foreach ($reportsWithGoals as $reportWithGoals) {
+            $newReportsWithGoals[] = $reportWithGoals;
+
+            if ($reportWithGoals['module'] === 'CustomVariables') {
+                $newReportsWithGoals[] = $reportToInsert;
+                $didInsert = true;
+            }
+        }
+
+        if (!$didInsert) {
+            $newReportsWithGoals[] = $reportToInsert;
+        }
+
+        $reportsWithGoals = $newReportsWithGoals;
+    }
+
+    public function getTablesInstalled(&$allTablesInstalled)
+    {
+        $allTablesInstalled[] = Common::prefixTable(LogTableVisit::TABLE_NAME);
+        $allTablesInstalled[] = Common::prefixTable(LogTableLinkVisitAction::TABLE_NAME);
+        $allTablesInstalled[] = Common::prefixTable(LogTableConversion::TABLE_NAME);
+    }
+
+    public static function scopeNameToId($scope)
+    {
+        switch ($scope) {
+            case self::SCOPE_VISIT:
+                return self::SCOPE_ID_VISIT;
+            case self::SCOPE_PAGE:
+                return self::SCOPE_ID_PAGE;
+            case self::SCOPE_CONVERSION:
+                return self::SCOPE_ID_CONVERSION;
+        }
+
+        throw new Exception('Invalid scope');
+    }
+
+    public static function scopeIdToName($scopeId)
+    {
+        switch ($scopeId) {
+            case self::SCOPE_ID_VISIT:
+                return self::SCOPE_VISIT;
+            case self::SCOPE_ID_PAGE:
+                return self::SCOPE_PAGE;
+            case self::SCOPE_ID_CONVERSION:
+                return self::SCOPE_CONVERSION;
+        }
+
+        throw new Exception('Invalid scope');
     }
 }

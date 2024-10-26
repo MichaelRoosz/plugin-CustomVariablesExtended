@@ -1,7 +1,8 @@
 Prio 1
-+ handle conversion - 'Tracker.newConversionInformation'
 + handle merged visits
 
 Prio 2
-+ implement segments ~ongoing
-+ implement reports
++ add phpstan
+
+Info:
+- min php version 7.2.5

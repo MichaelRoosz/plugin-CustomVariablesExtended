@@ -17,7 +17,7 @@ class CustomVariableDimension extends Dimension
 {
     protected $type = self::TYPE_TEXT;
 
-    private $id;
+    private $id = 'CustomVariablesExtended.CustomVariable';
 
     private $cvScope;
     private $cvIndex;

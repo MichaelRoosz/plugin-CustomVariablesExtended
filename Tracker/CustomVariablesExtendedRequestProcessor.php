@@ -8,6 +8,7 @@ use Piwik\Tracker\Request;
 use Piwik\Tracker\RequestProcessor;
 use Piwik\Tracker\Visit\VisitProperties;
 use Piwik\Plugins\CustomVariablesExtended\CustomVariablesExtended;
+use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableConversion;
 use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableLinkVisitAction;
 use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableVisit;
 
@@ -37,8 +38,8 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
 
             foreach ($visitCustomVariables as $index => $data) {
                 $logTableVisit->insertCustomVariable(
-                    $visitProperties->getProperty('idvisit'),
                     $request->getIdSite(),
+                    $visitProperties->getProperty('idvisit'),
                     $index,
                     $data['name'],
                     $data['value']
@@ -71,16 +72,72 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
 
                 foreach ($customVariables as $index => $data) {
                     $logTableLinkVisitAction->insertCustomVariable(
+                        $request->getIdSite(),
                         $visitProperties->getProperty('idvisit'),
                         $action->getIdLinkVisitAction(),
-                        $request->getIdSite(),
                         $index,
                         $data['name'],
                         $data['value']
                     );
                 }
             }
+        }
+    }
 
+    public function onNewConversionInformation(&$conversion, $visitInformation, $request, $action)
+    {
+        $logTableConversion = new LogTableConversion();
+
+        //
+        // scope visit
+        //
+        $visitCustomVariables = $request->getMetadata('CustomVariablesExtended', 'visitCustomVariablesExtended') ?: [];
+        if ($visitCustomVariables) {
+            foreach ($visitCustomVariables as $index => $data) {
+                $logTableConversion->insertCustomVariable(
+                    $request->getIdSite(),
+                    $visitInformation['idvisit'],
+                    $conversion['idgoal'],
+                    $conversion['buster'],
+                    CustomVariablesExtended::SCOPE_VISIT,
+                    $index,
+                    $data['name'],
+                    $data['value']
+                );
+            }
+        }
+
+        //
+        // scope action
+        //
+        if (
+            $action !== null
+            && !$request->getMetadata('CoreHome', 'visitorNotFoundInDb')
+        ) {
+
+            if (!$action || !($action instanceof Action)) {
+                return;
+            }
+
+            $customVariables = self::getCustomVariablesInPageScope($request);
+
+            if ($customVariables) {
+                Common::printDebug("Page level Custom Variables Extended (conversion): ");
+                Common::printDebug($customVariables);
+
+                foreach ($customVariables as $index => $data) {
+                    $logTableConversion->insertCustomVariable(
+                        $request->getIdSite(),
+                        $visitInformation['idvisit'],
+                        $conversion['idgoal'],
+                        $conversion['buster'],
+                        CustomVariablesExtended::SCOPE_PAGE,
+                        $index,
+                        $data['name'],
+                        $data['value']
+                    );
+                }
+            }
         }
     }
 
@@ -143,7 +200,7 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
 
     public static function truncateCustomVariableName($input)
     {
-        return mb_substr(trim($input), 0, CustomVariablesExtended::MAX_LENGTH_VARIABLE_VALUE);
+        return mb_substr(trim($input), 0, CustomVariablesExtended::MAX_LENGTH_VARIABLE_NAME);
     }
 
     public static function truncateCustomVariableValue($input)

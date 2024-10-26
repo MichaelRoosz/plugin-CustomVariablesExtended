@@ -9,7 +9,9 @@ use Piwik\Plugins\CustomVariablesExtended\CustomVariablesExtended;
 
 class LogTableVisit
 {
-    private $tableName = 'log_custom_variable_visit';
+    public const TABLE_NAME = 'log_custom_variable_visit';
+
+    private $tableName = self::TABLE_NAME;
     private $tableNamePrefixed;
 
     public function __construct()
@@ -22,20 +24,24 @@ class LogTableVisit
         return Db::get();
     }
 
-    public function insertCustomVariable($idVisit, $idSite, $index, $name, $value)
+    public function insertCustomVariable($idSite, $idVisit, $index, $name, $value)
     {
         $this->getDb()->query(
             'INSERT INTO ' . $this->tableNamePrefixed
-                . ' (`idvisit`, `idsite`, `index`, `name`, `value`)'
+                . ' (`idvisit`, `index`,  `idsite`, `name`, `value`)'
                 . ' VALUES (?,?,?,?,?)'
                 . ' ON DUPLICATE KEY UPDATE '
+                . ' `idsite` = ?,'
+                . ' `name` = ?,'
                 . ' `value` = ?',
             [
                 $idVisit,
-                $idSite,
                 $index,
+                $idSite,
                 $name,
                 $value,
+                $idSite,
+                $name,
                 $value,
             ]
         );
@@ -61,12 +67,12 @@ class LogTableVisit
     public function install()
     {
         $table = "`idvisit` BIGINT UNSIGNED NOT NULL,
-                  `idsite` INT UNSIGNED NOT NULL,
                   `index` SMALLINT UNSIGNED NOT NULL,
+                  `idsite` INT UNSIGNED NOT NULL,
                   `name` VARCHAR(" . CustomVariablesExtended::MAX_LENGTH_VARIABLE_NAME . ") DEFAULT NULL,
                   `value` VARCHAR(" . CustomVariablesExtended::MAX_LENGTH_VARIABLE_VALUE . ") DEFAULT NULL,
                   PRIMARY KEY (`idvisit`, `index`),
-                  KEY (`idsite`, `index`, `name`)";
+                  KEY (`idsite`, `index`, `name`, `idvisit`)";
 
         DbHelper::createTable($this->tableName, $table);
     }

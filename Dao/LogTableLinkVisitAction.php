@@ -9,7 +9,9 @@ use Piwik\Plugins\CustomVariablesExtended\CustomVariablesExtended;
 
 class LogTableLinkVisitAction
 {
-    private $tableName = 'log_custom_variable_link_va';
+    public const TABLE_NAME = 'log_custom_variable_link_va';
+
+    private $tableName = self::TABLE_NAME;
     private $tableNamePrefixed;
 
     public function __construct()
@@ -22,21 +24,27 @@ class LogTableLinkVisitAction
         return Db::get();
     }
 
-    public function insertCustomVariable($idVisit, $idLinkVisitAction, $idSite, $index, $name, $value)
+    public function insertCustomVariable($idSite, $idVisit, $idLinkVisitAction, $index, $name, $value)
     {
         $this->getDb()->query(
             'INSERT INTO ' . $this->tableNamePrefixed
-                . ' (`idvisit`, `idlink_va`, `idsite`, `index`, `name`, `value`)'
+                . ' (`idlink_va`, `index`, `idsite`, `idvisit`, `name`, `value`)'
                 . ' VALUES (?,?,?,?,?,?)'
                 . ' ON DUPLICATE KEY UPDATE '
+                . ' `idsite` = ?,'
+                . ' `idvisit` = ?,'
+                . ' `name` = ?,'
                 . ' `value` = ?',
             [
-                $idVisit,
                 $idLinkVisitAction,
-                $idSite,
                 $index,
+                $idSite,
+                $idVisit,
                 $name,
                 $value,
+                $idSite,
+                $idVisit,
+                $name,
                 $value,
             ]
         );
@@ -44,18 +52,14 @@ class LogTableLinkVisitAction
 
     public function install()
     {
-        $table = "`idvisit` BIGINT UNSIGNED NOT NULL,
-                  `idlink_va` INT UNSIGNED NOT NULL,
-                  `idsite` INT UNSIGNED NOT NULL,
+        $table = "`idlink_va` BIGINT UNSIGNED NOT NULL,
                   `index` SMALLINT UNSIGNED NOT NULL,
+                  `idsite` INT UNSIGNED NOT NULL,
+                  `idvisit` BIGINT UNSIGNED NOT NULL,
                   `name` VARCHAR(" . CustomVariablesExtended::MAX_LENGTH_VARIABLE_NAME . ") DEFAULT NULL,
                   `value` VARCHAR(" . CustomVariablesExtended::MAX_LENGTH_VARIABLE_VALUE . ") DEFAULT NULL,
                   PRIMARY KEY (`idlink_va`, `index`),
-                  KEY (`idlink_va`, `index`, `name`),
-                  KEY (`idsite`, `index`, `name`)";
-
-
-        // todo: put index on name + value
+                  KEY (`idsite`, `index`, `name`, `idvisit`, `idlink_va`)";
 
         DbHelper::createTable($this->tableName, $table);
     }
