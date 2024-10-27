@@ -4,6 +4,7 @@ parameters:
         - .
     excludePaths:
         - vendor
+        - linting
     bootstrapFiles:
         - phpstan-bootstrap.php
     treatPhpDocTypesAsCertain: false
