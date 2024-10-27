@@ -13,14 +13,12 @@ use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableConversion;
 use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableLinkVisitAction;
 use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableVisit;
 
-class CustomVariablesExtendedRequestProcessor extends RequestProcessor
-{
-    public function processRequestParams(VisitProperties $visitProperties, Request $request): bool
-    {
+class CustomVariablesExtendedRequestProcessor extends RequestProcessor {
+    public function processRequestParams(VisitProperties $visitProperties, Request $request): bool {
         // TODO: re-add optimization where if custom variables exist in request, don't bother selecting them in Visitor
         $visitorCustomVariables = self::getCustomVariablesInVisitScope($request);
         if ($visitorCustomVariables) {
-            Common::printDebug("Visit level Custom Variables Extended: ");
+            Common::printDebug('Visit level Custom Variables Extended: ');
             Common::printDebug($visitorCustomVariables);
         }
 
@@ -29,14 +27,13 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
         return false;
     }
 
-    public function recordLogs(VisitProperties $visitProperties, Request $request): void
-    {
+    public function recordLogs(VisitProperties $visitProperties, Request $request): void {
         $idVisit = $visitProperties->getProperty('idvisit');
         if (!is_int($idVisit)) {
             if (is_numeric($idVisit)) {
-                $idVisit = (int)$idVisit;
+                $idVisit = (int) $idVisit;
             } else {
-                throw new Exception("idvisit is not an integer");
+                throw new Exception('idvisit is not an integer');
             }
         }
 
@@ -77,7 +74,7 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
             $customVariables = self::getCustomVariablesInPageScope($request);
 
             if ($customVariables) {
-                Common::printDebug("Page level Custom Variables Extended: ");
+                Common::printDebug('Page level Custom Variables Extended: ');
                 Common::printDebug($customVariables);
 
                 $logTableLinkVisitAction = new LogTableLinkVisitAction();
@@ -102,8 +99,7 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
      * @param \Piwik\Tracker\Request $request
      * @param \Piwik\Tracker\Action|null $action
      */
-    public function onNewConversionInformation(&$conversion, $visitInformation, $request, $action): void
-    {
+    public function onNewConversionInformation(&$conversion, $visitInformation, $request, $action): void {
         $logTableConversion = new LogTableConversion();
 
         //
@@ -140,7 +136,7 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
             $customVariables = self::getCustomVariablesInPageScope($request);
 
             if ($customVariables) {
-                Common::printDebug("Page level Custom Variables Extended (conversion): ");
+                Common::printDebug('Page level Custom Variables Extended (conversion): ');
                 Common::printDebug($customVariables);
 
                 foreach ($customVariables as $index => $data) {
@@ -165,8 +161,7 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
      *   value: string
      * }>
      */
-    public static function getCustomVariablesInVisitScope(Request $request): array
-    {
+    public static function getCustomVariablesInVisitScope(Request $request): array {
         return self::getCustomVariables($request, '_cvar');
     }
 
@@ -176,9 +171,16 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
      *   value: string
      * }>
      */
-    public static function getCustomVariablesInPageScope(Request $request): array
-    {
+    public static function getCustomVariablesInPageScope(Request $request): array {
         return self::getCustomVariables($request, 'cvar');
+    }
+
+    public static function truncateCustomVariableName(string $input): string {
+        return mb_substr(trim($input), 0, CustomVariablesExtended::MAX_LENGTH_VARIABLE_NAME);
+    }
+
+    public static function truncateCustomVariableValue(string $input): string {
+        return mb_substr(trim($input), 0, CustomVariablesExtended::MAX_LENGTH_VARIABLE_VALUE);
     }
 
     /**
@@ -187,8 +189,7 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
      *   value: string
      * }>
      */
-    private static function getCustomVariables(Request $request, string $parameter): array
-    {
+    private static function getCustomVariables(Request $request, string $parameter): array {
         $cvar = Common::getRequestVar($parameter, '', 'json', $request->getParams());
         if (!is_array($cvar) && !is_string($cvar)) {
             return [];
@@ -202,7 +203,7 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
         $customVariables = [];
 
         foreach ($customVar as $index => $keyValue) {
-            $index = (int)$index;
+            $index = (int) $index;
 
             if (!is_array($keyValue)) {
                 continue;
@@ -219,34 +220,25 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
                     || (!is_string($keyValue[1]) && !is_numeric($keyValue[1])))
             ) {
                 Common::printDebug("Invalid custom variables detected (index=$index)");
+
                 continue;
             }
 
-            $keyValue[0] = (string)$keyValue[0];
-            $keyValue[1] = (string)$keyValue[1];
+            $keyValue[0] = (string) $keyValue[0];
+            $keyValue[1] = (string) $keyValue[1];
 
             if (strlen($keyValue[1]) == 0) {
-                $keyValue[1] = "";
+                $keyValue[1] = '';
             }
             // We keep in the URL when Custom Variable have empty names
             // and values, as it means they can be deleted server side
 
             $customVariables[$index] = [
                 'name' => self::truncateCustomVariableName($keyValue[0]),
-                'value' => self::truncateCustomVariableValue($keyValue[1])
+                'value' => self::truncateCustomVariableValue($keyValue[1]),
             ];
         }
 
         return $customVariables;
-    }
-
-    public static function truncateCustomVariableName(string $input): string
-    {
-        return mb_substr(trim($input), 0, CustomVariablesExtended::MAX_LENGTH_VARIABLE_NAME);
-    }
-
-    public static function truncateCustomVariableValue(string $input): string
-    {
-        return mb_substr(trim($input), 0, CustomVariablesExtended::MAX_LENGTH_VARIABLE_VALUE);
     }
 }

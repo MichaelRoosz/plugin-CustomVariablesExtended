@@ -7,21 +7,18 @@ use Piwik\Plugins\CustomVariablesExtended\CustomVariablesExtended;
 use Piwik\Plugins\Live\ProfileSummary\ProfileSummaryAbstract;
 use Piwik\View;
 
-class VisitScopeSummary extends ProfileSummaryAbstract
-{
+class VisitScopeSummary extends ProfileSummaryAbstract {
     /**
      * @inheritdoc
      */
-    public function getName()
-    {
+    public function getName() {
         return Piwik::translate('CustomVariablesExtended_CustomVariables') . ' ' . Piwik::translate('General_TrackingScopeVisit');
     }
 
     /**
      * @inheritdoc
      */
-    public function render()
-    {
+    public function render() {
         if (empty($this->profile['customVariablesExtended']) || empty($this->profile['customVariablesExtended'][CustomVariablesExtended::SCOPE_VISIT])) {
             return '';
         }
@@ -43,8 +40,7 @@ class VisitScopeSummary extends ProfileSummaryAbstract
     /**
      * @inheritdoc
      */
-    public function getOrder()
-    {
+    public function getOrder() {
         return 16;
     }
 }

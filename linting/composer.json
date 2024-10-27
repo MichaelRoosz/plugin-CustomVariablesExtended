@@ -3,24 +3,17 @@
     "type": "project",
 
     "require": {
-        "php": "^7.2.5",
-        "matomo/matomo": "=5.1.2"
+        "php": "^8.3.0"
     },
 
     "require-dev": {
-        "phpstan/phpstan": "^1.11.9"
-    },
-
-    "autoload": {
-        "psr-4": {
-            "Piwik\\Plugins\\CustomVariablesExtended\\": "./"
-        }
+        "friendsofphp/php-cs-fixer": "^3.5.0"
     },
 
     "scripts": {
-        "lint": "linting/vendor/bin/php-cs-fixer check",
-        "lint-fix": "linting/vendor/bin/php-cs-fixer fix",
-        "phpstan": "vendor/bin/phpstan analyse"
+        "lint": "vendor/bin/php-cs-fixer check",
+        "lint-fix": "vendor/bin/php-cs-fixer fix",
+        "phpstan": "../vendor/bin/phpstan analyse"
     },
 
     "config": {

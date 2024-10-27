@@ -10,13 +10,11 @@ use Piwik\Db;
 use Piwik\DbHelper;
 use Piwik\Metrics;
 
-class LogAggregatorProxy extends LogAggregator
-{
+class LogAggregatorProxy extends LogAggregator {
     /** @var LogAggregator $logAggregator */
     protected $logAggregator;
 
-    public function __construct(LogAggregator $logAggregator)
-    {
+    public function __construct(LogAggregator $logAggregator) {
         $this->logAggregator = $logAggregator;
     }
 
@@ -198,7 +196,6 @@ class LogAggregatorProxy extends LogAggregator
         return $query;
     }
 
-
     /**
      * Executes and returns a query aggregating action data (everything in the log_action table) and returns
      * a DB statement that can be used to iterate over the result
@@ -258,7 +255,7 @@ class LogAggregatorProxy extends LogAggregator
     public function queryActionsByDimension(
         $dimensions,
         $where = '',
-        $additionalSelects = array(),
+        $additionalSelects = [],
         $metrics = false,
         $rankingQuery = null,
         $joinLogActionOnColumn = false,
@@ -277,7 +274,7 @@ class LogAggregatorProxy extends LogAggregator
         if ($joinLogActionOnColumn !== false && !is_bool($joinLogActionOnColumn)) {
             $multiJoin = is_array($joinLogActionOnColumn);
             if (!$multiJoin) {
-                $joinLogActionOnColumn = array($joinLogActionOnColumn);
+                $joinLogActionOnColumn = [$joinLogActionOnColumn];
             }
 
             foreach ($joinLogActionOnColumn as $i => $joinColumn) {
@@ -290,11 +287,11 @@ class LogAggregatorProxy extends LogAggregator
                     $joinOn = $tableAlias . '.idaction = ' . $joinColumn;
                 }
 
-                $from[] = array(
+                $from[] = [
                     'table'      => 'log_action',
                     'tableAlias' => $tableAlias,
-                    'joinOn'     => $joinOn
-                );
+                    'joinOn'     => $joinOn,
+                ];
             }
         }
 

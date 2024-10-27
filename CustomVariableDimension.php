@@ -14,8 +14,7 @@ use Piwik\Segment\SegmentsList;
 use Piwik\Plugins\CustomVariablesExtended\Segment;
 use Piwik\Plugins\CustomVariablesExtended\CustomVariablesExtended;
 
-class CustomVariableDimension extends Dimension
-{
+class CustomVariableDimension extends Dimension {
     /** @var string $type */
     protected $type = self::TYPE_TEXT;
 
@@ -28,30 +27,26 @@ class CustomVariableDimension extends Dimension
     /** @var int $cvIndex */
     private $cvIndex;
 
-    public function getId(): string
-    {
+    public function getId(): string {
         return $this->id;
     }
 
-    public function getName(): string
-    {
+    public function getName(): string {
         return Piwik::translate('CustomVariablesExtended_ColumnCustomVariableValue');
     }
 
-    public function initCustomDimension(string $scope, int $index): void
-    {
+    public function initCustomDimension(string $scope, int $index): void {
         $this->cvScope = $scope;
         $this->cvIndex = $index;
 
         $category = $this->getScopeDescription();
 
         $this->id = 'CustomVariablesExtended.CustomVariable' . $this->getScopeName() . $index;
-        $this->nameSingular = Piwik::translate('CustomVariablesExtended_ColumnCustomVariableValue') . ' ' . $index . ' (' . $category .')';
+        $this->nameSingular = Piwik::translate('CustomVariablesExtended_ColumnCustomVariableValue') . ' ' . $index . ' (' . $category . ')';
         $this->category = 'CustomVariablesExtended_CustomVariables';
     }
 
-    public function configureSegments(SegmentsList $segmentsList, DimensionSegmentFactory $dimensionSegmentFactory): void
-    {
+    public function configureSegments(SegmentsList $segmentsList, DimensionSegmentFactory $dimensionSegmentFactory): void {
         if ($this->cvScope === CustomVariablesExtended::SCOPE_CONVERSION) {
             return;
         }
@@ -82,8 +77,7 @@ class CustomVariableDimension extends Dimension
         $segmentsList->addSegment($dimensionSegmentFactory->createSegment($segment));
     }
 
-    public function getDbColumnJoin(): Join
-    {
+    public function getDbColumnJoin(): Join {
         if ($this->cvScope === CustomVariablesExtended::SCOPE_VISIT) {
             return new CustomVariableVisitJoin();
         } elseif ($this->cvScope === CustomVariablesExtended::SCOPE_PAGE) {
@@ -93,8 +87,7 @@ class CustomVariableDimension extends Dimension
         }
     }
 
-    public function getDbDiscriminator(): Discriminator
-    {
+    public function getDbDiscriminator(): Discriminator {
         if ($this->cvScope === CustomVariablesExtended::SCOPE_VISIT) {
             return new Discriminator('log_custom_variable_visit', 'index', $this->cvIndex);
         } elseif ($this->cvScope === CustomVariablesExtended::SCOPE_PAGE) {
@@ -104,13 +97,11 @@ class CustomVariableDimension extends Dimension
         }
     }
 
-    private function getScopeName(): string
-    {
+    private function getScopeName(): string {
         return ucfirst($this->cvScope);
     }
 
-    private function getScopeDescription(): string
-    {
+    private function getScopeDescription(): string {
         switch ($this->cvScope) {
             case CustomVariablesExtended::SCOPE_PAGE:
                 return Piwik::translate('CustomVariablesExtended_ScopePage');
