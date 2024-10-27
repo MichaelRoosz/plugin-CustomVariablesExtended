@@ -138,12 +138,12 @@ class API extends \Piwik\Plugin\API {
 
                 $nbVisits = $row->getColumn('nb_visits');
                 if (!is_int($nbVisits)) {
-                    continue;
+                    $nbVisits = 0;
                 }
 
                 $nbActions = $row->getColumn('nb_actions');
                 if (!is_int($nbActions)) {
-                    continue;
+                    $nbActions = 0;
                 }
 
                 foreach ($slots as $slot) {
