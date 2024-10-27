@@ -7,47 +7,40 @@ use Piwik\Tracker\LogTable;
 
 class CustomVariableLinkVisitAction extends LogTable
 {
-    public function getName()
+    public function getName(): string
     {
         return LogTableLinkVisitAction::TABLE_NAME;
     }
 
-    public function getIdColumn()
+    public function getIdColumn(): string
     {
         return 'idlink_va';
     }
 
-    public function getColumnToJoinOnIdVisit()
+    public function getColumnToJoinOnIdVisit(): string
     {
         return 'idvisit';
     }
 
-    public function getColumnToJoinOnIdAction()
+    public function getColumnToJoinOnIdAction(): string
     {
         return '';
     }
 
-    public function getWaysToJoinToOtherLogTables()
-    {
-        return [];
-    }
-
-    public function shouldJoinWithSubSelect()
+    public function shouldJoinWithSubSelect(): bool
     {
         return false;
     }
 
-    public function getDateTimeColumn()
+    public function getDateTimeColumn(): string
     {
         return '';
     }
 
-    public function getLinkTableToBeAbleToJoinOnVisit()
-    {
-        return;
-    }
-
-    public function getPrimaryKey()
+    /**
+     * @return string[]
+     */
+    public function getPrimaryKey(): array
     {
         return ['idlink_va', 'index'];
     }

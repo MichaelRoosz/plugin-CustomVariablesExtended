@@ -7,49 +7,41 @@ use Piwik\Tracker\LogTable;
 
 class CustomVariableConversion extends LogTable
 {
-    public function getName()
+    public function getName(): string
     {
         return LogTableConversion::TABLE_NAME;
     }
 
-    public function getIdColumn()
+    public function getIdColumn(): string
     {
         return 'idvisit';
     }
 
-    public function getColumnToJoinOnIdVisit()
+    public function getColumnToJoinOnIdVisit(): string
     {
         return 'idvisit';
     }
 
-    public function getColumnToJoinOnIdAction()
+    public function getColumnToJoinOnIdAction(): string
     {
         return '';
     }
 
-    public function getWaysToJoinToOtherLogTables()
-    {
-        return [];
-    }
-
-    public function shouldJoinWithSubSelect()
+    public function shouldJoinWithSubSelect(): bool
     {
         return false;
     }
 
-    public function getDateTimeColumn()
+    public function getDateTimeColumn(): string
     {
         return '';
     }
 
-    public function getLinkTableToBeAbleToJoinOnVisit()
-    {
-        return;
-    }
-
-    public function getPrimaryKey()
+    /**
+     * @return string[]
+     */
+    public function getPrimaryKey(): array
     {
         return ['idvisit', 'idgoal', 'buster', 'scope', 'index'];
     }
-
 }

@@ -2,6 +2,7 @@
 
 namespace Piwik\Plugins\CustomVariablesExtended\Tracker;
 
+use Exception;
 use Piwik\Common;
 use Piwik\Tracker\Action;
 use Piwik\Tracker\Request;
@@ -14,7 +15,7 @@ use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableVisit;
 
 class CustomVariablesExtendedRequestProcessor extends RequestProcessor
 {
-    public function processRequestParams(VisitProperties $visitProperties, Request $request)
+    public function processRequestParams(VisitProperties $visitProperties, Request $request): bool
     {
         // TODO: re-add optimization where if custom variables exist in request, don't bother selecting them in Visitor
         $visitorCustomVariables = self::getCustomVariablesInVisitScope($request);
@@ -24,22 +25,33 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
         }
 
         $request->setMetadata('CustomVariablesExtended', 'visitCustomVariablesExtended', $visitorCustomVariables);
+
+        return false;
     }
 
-    public function recordLogs(VisitProperties $visitProperties, Request $request)
+    public function recordLogs(VisitProperties $visitProperties, Request $request): void
     {
+        $idVisit = $visitProperties->getProperty('idvisit');
+        if (!is_int($idVisit)) {
+            if (is_numeric($idVisit)) {
+                $idVisit = (int)$idVisit;
+            } else {
+                throw new Exception("idvisit is not an integer");
+            }
+        }
+
         //
         // scope visit
         //
         $visitCustomVariables = $request->getMetadata('CustomVariablesExtended', 'visitCustomVariablesExtended');
 
-        if ($visitCustomVariables) {
+        if (is_array($visitCustomVariables) && $visitCustomVariables) {
             $logTableVisit = new LogTableVisit();
 
             foreach ($visitCustomVariables as $index => $data) {
                 $logTableVisit->insertCustomVariable(
                     $request->getIdSite(),
-                    $visitProperties->getProperty('idvisit'),
+                    $idVisit,
                     $index,
                     $data['name'],
                     $data['value']
@@ -73,7 +85,7 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
                 foreach ($customVariables as $index => $data) {
                     $logTableLinkVisitAction->insertCustomVariable(
                         $request->getIdSite(),
-                        $visitProperties->getProperty('idvisit'),
+                        $idVisit,
                         $action->getIdLinkVisitAction(),
                         $index,
                         $data['name'],
@@ -84,7 +96,13 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
         }
     }
 
-    public function onNewConversionInformation(&$conversion, $visitInformation, $request, $action)
+    /**
+     * @param array{idgoal: int, buster: int} $conversion
+     * @param array{idvisit: int} $visitInformation
+     * @param \Piwik\Tracker\Request $request
+     * @param \Piwik\Tracker\Action|null $action
+     */
+    public function onNewConversionInformation(&$conversion, $visitInformation, $request, $action): void
     {
         $logTableConversion = new LogTableConversion();
 
@@ -92,7 +110,7 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
         // scope visit
         //
         $visitCustomVariables = $request->getMetadata('CustomVariablesExtended', 'visitCustomVariablesExtended') ?: [];
-        if ($visitCustomVariables) {
+        if (is_array($visitCustomVariables) &&  $visitCustomVariables) {
             foreach ($visitCustomVariables as $index => $data) {
                 $logTableConversion->insertCustomVariable(
                     $request->getIdSite(),
@@ -141,21 +159,42 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
         }
     }
 
-    public static function getCustomVariablesInVisitScope(Request $request)
+    /**
+     * @return array<int, array{
+     *   name: string,
+     *   value: string
+     * }>
+     */
+    public static function getCustomVariablesInVisitScope(Request $request): array
     {
         return self::getCustomVariables($request, '_cvar');
     }
 
-    public static function getCustomVariablesInPageScope(Request $request)
+    /**
+     * @return array<int, array{
+     *   name: string,
+     *   value: string
+     * }>
+     */
+    public static function getCustomVariablesInPageScope(Request $request): array
     {
         return self::getCustomVariables($request, 'cvar');
     }
 
-    private static function getCustomVariables(Request $request, $parameter)
+    /**
+     * @return array<int, array{
+     *   name: string,
+     *   value: string
+     * }>
+     */
+    private static function getCustomVariables(Request $request, string $parameter): array
     {
-        $cvar      = Common::getRequestVar($parameter, '', 'json', $request->getParams());
-        $customVar = Common::unsanitizeInputValues($cvar);
+        $cvar = Common::getRequestVar($parameter, '', 'json', $request->getParams());
+        if (!is_array($cvar) && !is_string($cvar)) {
+            return [];
+        }
 
+        $customVar = Common::unsanitizeInputValues($cvar);
         if (!is_array($customVar)) {
             return [];
         }
@@ -183,6 +222,9 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
                 continue;
             }
 
+            $keyValue[0] = (string)$keyValue[0];
+            $keyValue[1] = (string)$keyValue[1];
+
             if (strlen($keyValue[1]) == 0) {
                 $keyValue[1] = "";
             }
@@ -198,12 +240,12 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor
         return $customVariables;
     }
 
-    public static function truncateCustomVariableName($input)
+    public static function truncateCustomVariableName(string $input): string
     {
         return mb_substr(trim($input), 0, CustomVariablesExtended::MAX_LENGTH_VARIABLE_NAME);
     }
 
-    public static function truncateCustomVariableValue($input)
+    public static function truncateCustomVariableValue(string $input): string
     {
         return mb_substr(trim($input), 0, CustomVariablesExtended::MAX_LENGTH_VARIABLE_VALUE);
     }

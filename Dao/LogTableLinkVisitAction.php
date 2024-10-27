@@ -11,7 +11,10 @@ class LogTableLinkVisitAction
 {
     public const TABLE_NAME = 'log_custom_variable_link_va';
 
+    /** @var string $tableName */
     private $tableName = self::TABLE_NAME;
+
+    /** @var string $tableNamePrefixed */
     private $tableNamePrefixed;
 
     public function __construct()
@@ -19,12 +22,25 @@ class LogTableLinkVisitAction
         $this->tableNamePrefixed = Common::prefixTable($this->tableName);
     }
 
+    /**
+     * @return \Piwik\Tracker\Db|\Piwik\Db
+     */
     private function getDb()
     {
-        return Db::get();
+        $db = Db::get();
+
+        if ($db instanceof \Piwik\Tracker\Db) {
+            return $db;
+        }
+
+        if ($db instanceof \Piwik\Db) {
+            return $db;
+        }
+
+        throw new \Exception('Unsupported database type');
     }
 
-    public function insertCustomVariable($idSite, $idVisit, $idLinkVisitAction, $index, $name, $value)
+    public function insertCustomVariable(int $idSite, int $idVisit, int $idLinkVisitAction, int $index, string $name, string $value): void
     {
         $this->getDb()->query(
             'INSERT INTO ' . $this->tableNamePrefixed
@@ -50,7 +66,7 @@ class LogTableLinkVisitAction
         );
     }
 
-    public function install()
+    public function install(): void
     {
         $table = "`idlink_va` BIGINT UNSIGNED NOT NULL,
                   `index` SMALLINT UNSIGNED NOT NULL,
@@ -65,7 +81,7 @@ class LogTableLinkVisitAction
         DbHelper::createTable($this->tableName, $table);
     }
 
-    public function uninstall()
+    public function uninstall(): void
     {
         Db::dropTables(array($this->tableNamePrefixed));
     }

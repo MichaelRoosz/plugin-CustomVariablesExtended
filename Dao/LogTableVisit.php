@@ -11,7 +11,10 @@ class LogTableVisit
 {
     public const TABLE_NAME = 'log_custom_variable_visit';
 
+    /** @var string $tableName */
     private $tableName = self::TABLE_NAME;
+
+    /** @var string $tableNamePrefixed */
     private $tableNamePrefixed;
 
     public function __construct()
@@ -19,12 +22,25 @@ class LogTableVisit
         $this->tableNamePrefixed = Common::prefixTable($this->tableName);
     }
 
+    /**
+     * @return \Piwik\Tracker\Db|\Piwik\Db
+     */
     private function getDb()
     {
-        return Db::get();
+        $db = Db::get();
+
+        if ($db instanceof \Piwik\Tracker\Db) {
+            return $db;
+        }
+
+        if ($db instanceof \Piwik\Db) {
+            return $db;
+        }
+
+        throw new \Exception('Unsupported database type');
     }
 
-    public function insertCustomVariable($idSite, $idVisit, $index, $name, $value)
+    public function insertCustomVariable(int $idSite, int $idVisit, int $index, string $name, string $value): void
     {
         $this->getDb()->query(
             'INSERT INTO ' . $this->tableNamePrefixed
@@ -47,7 +63,10 @@ class LogTableVisit
         );
     }
 
-    public function getCustomVariablesForVisit($idVisit)
+    /**
+     * @return array<string, array{name: string, value: string}>
+     */
+    public function getCustomVariablesForVisit(string $idVisit): array
     {
         $sql = 'SELECT * FROM ' . $this->tableNamePrefixed . ' WHERE idvisit = ?';
 
@@ -64,7 +83,7 @@ class LogTableVisit
         return $cvars;
     }
 
-    public function install()
+    public function install(): void
     {
         $table = "`idvisit` BIGINT UNSIGNED NOT NULL,
                   `index` SMALLINT UNSIGNED NOT NULL,
@@ -77,7 +96,7 @@ class LogTableVisit
         DbHelper::createTable($this->tableName, $table);
     }
 
-    public function uninstall()
+    public function uninstall(): void
     {
         Db::dropTables(array($this->tableNamePrefixed));
     }

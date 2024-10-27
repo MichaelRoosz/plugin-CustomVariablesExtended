@@ -6,12 +6,12 @@ use Piwik\Piwik;
 
 class Controller extends \Piwik\Plugin\Controller
 {
-    public function manage()
+    public function manage(): string
     {
         $this->checkSitePermission();
         Piwik::checkUserHasAdminAccess($this->idSite);
 
-        return $this->renderTemplate('manage', array());
+        return $this->renderTemplate('manage', []);
     }
 
 }

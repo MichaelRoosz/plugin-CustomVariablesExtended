@@ -6,6 +6,7 @@ use Exception;
 use Piwik\Piwik;
 use Piwik\Columns\Dimension;
 use Piwik\Columns\DimensionSegmentFactory;
+use Piwik\Columns\Join;
 use Piwik\Columns\Discriminator;
 use Piwik\Plugins\CustomVariablesExtended\Columns\Join\CustomVariableLinkVisitActionJoin;
 use Piwik\Plugins\CustomVariablesExtended\Columns\Join\CustomVariableVisitJoin;
@@ -15,24 +16,29 @@ use Piwik\Plugins\CustomVariablesExtended\CustomVariablesExtended;
 
 class CustomVariableDimension extends Dimension
 {
+    /** @var string $type */
     protected $type = self::TYPE_TEXT;
 
+    /** @var string $id */
     private $id = 'CustomVariablesExtended.CustomVariable';
 
+    /** @var string $cvScope */
     private $cvScope;
+
+    /** @var int $cvIndex */
     private $cvIndex;
 
-    public function getId()
+    public function getId(): string
     {
         return $this->id;
     }
 
-    public function getName()
+    public function getName(): string
     {
         return Piwik::translate('CustomVariablesExtended_ColumnCustomVariableValue');
     }
 
-    public function initCustomDimension($scope, $index)
+    public function initCustomDimension(string $scope, int $index): void
     {
         $this->cvScope = $scope;
         $this->cvIndex = $index;
@@ -44,7 +50,7 @@ class CustomVariableDimension extends Dimension
         $this->category = 'CustomVariablesExtended_CustomVariables';
     }
 
-    public function configureSegments(SegmentsList $segmentsList, DimensionSegmentFactory $dimensionSegmentFactory)
+    public function configureSegments(SegmentsList $segmentsList, DimensionSegmentFactory $dimensionSegmentFactory): void
     {
         if ($this->cvScope === CustomVariablesExtended::SCOPE_CONVERSION) {
             return;
@@ -76,7 +82,7 @@ class CustomVariableDimension extends Dimension
         $segmentsList->addSegment($dimensionSegmentFactory->createSegment($segment));
     }
 
-    public function getDbColumnJoin()
+    public function getDbColumnJoin(): Join
     {
         if ($this->cvScope === CustomVariablesExtended::SCOPE_VISIT) {
             return new CustomVariableVisitJoin();
@@ -87,7 +93,7 @@ class CustomVariableDimension extends Dimension
         }
     }
 
-    public function getDbDiscriminator()
+    public function getDbDiscriminator(): Discriminator
     {
         if ($this->cvScope === CustomVariablesExtended::SCOPE_VISIT) {
             return new Discriminator('log_custom_variable_visit', 'index', $this->cvIndex);
@@ -98,12 +104,12 @@ class CustomVariableDimension extends Dimension
         }
     }
 
-    private function getScopeName()
+    private function getScopeName(): string
     {
         return ucfirst($this->cvScope);
     }
 
-    private function getScopeDescription()
+    private function getScopeDescription(): string
     {
         switch ($this->cvScope) {
             case CustomVariablesExtended::SCOPE_PAGE:

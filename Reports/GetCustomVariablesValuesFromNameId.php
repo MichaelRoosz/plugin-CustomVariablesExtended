@@ -9,7 +9,7 @@ use Piwik\Plugins\CustomVariablesExtended\CustomVariablesExtended;
 
 class GetCustomVariablesValuesFromNameId extends Base
 {
-    protected function init()
+    protected function init(): void
     {
         $dimension = new CustomVariableDimension();
         $dimension->initCustomDimension(CustomVariablesExtended::SCOPE_VISIT, CustomVariablesExtended::FIRST_CUSTOM_VARIABLE_INDEX);
@@ -25,7 +25,7 @@ class GetCustomVariablesValuesFromNameId extends Base
         $this->order = 15;
     }
 
-    public function configureView(ViewDataTable $view)
+    public function configureView(ViewDataTable $view): void
     {
         $view->config->columns_to_display = array('label', 'nb_actions', 'nb_visits');
         $view->config->show_goals  = true;

@@ -1,0 +1,38 @@
+{
+    "name": "mroosz/custom-variables-extended",
+    "type": "project",
+
+    "require": {
+        "php": "^7.2.5",
+        "matomo/matomo": "=5.1.2"
+    },
+
+    "require-dev": {
+        "phpstan/phpstan": "^1.11.9"
+    },
+
+    "autoload": {
+        "psr-4": {
+            "Piwik\\Plugins\\CustomVariablesExtended\\": "./"
+        }
+    },
+
+    "scripts": {
+        "lint": "vendor/bin/php-cs-fixer check",
+        "lint-fix": "vendor/bin/php-cs-fixer fix",
+        "phpstan": "vendor/bin/phpstan analyse"
+    },
+
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

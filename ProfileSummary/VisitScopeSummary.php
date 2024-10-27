@@ -7,9 +7,6 @@ use Piwik\Plugins\CustomVariablesExtended\CustomVariablesExtended;
 use Piwik\Plugins\Live\ProfileSummary\ProfileSummaryAbstract;
 use Piwik\View;
 
-/**
- * Class VisitScopeSummary
- */
 class VisitScopeSummary extends ProfileSummaryAbstract
 {
     /**
@@ -29,10 +26,17 @@ class VisitScopeSummary extends ProfileSummaryAbstract
             return '';
         }
 
-        $view              = new View('@CustomVariablesExtended/_profileSummary.twig');
+        $view = new View('@CustomVariablesExtended/_profileSummary.twig');
+
+        /** @phpstan-ignore property.notFound */
         $view->visitorData = $this->profile;
+
+        /** @phpstan-ignore property.notFound */
         $view->scopeName   = Piwik::translate('General_TrackingScopeVisit');
+
+        /** @phpstan-ignore property.notFound */
         $view->variables   = $this->profile['customVariablesExtended'][CustomVariablesExtended::SCOPE_VISIT];
+
         return $view->render();
     }
 

@@ -2,6 +2,7 @@
 
 namespace Piwik\Plugins\CustomVariablesExtended;
 
+use Exception;
 use Piwik\Common;
 use Piwik\Plugin;
 use Piwik\DataAccess\LogAggregator;
@@ -11,9 +12,10 @@ use Piwik\Metrics;
 
 class LogAggregatorProxy extends LogAggregator
 {
+    /** @var LogAggregator $logAggregator */
     protected $logAggregator;
 
-    public function __construct($logAggregator)
+    public function __construct(LogAggregator $logAggregator)
     {
         $this->logAggregator = $logAggregator;
     }
@@ -44,7 +46,7 @@ class LogAggregatorProxy extends LogAggregator
      *
      * _Note: The metrics returned by this query can be customized by the `$metrics` parameter._
      *
-     * @param array|string $dimensions `SELECT` fields (or just one field) that will be grouped by,
+     * @param array<string> $dimensions `SELECT` fields (or just one field) that will be grouped by,
      *                                 eg, `'referrer_name'` or `array('referrer_name', 'referrer_keyword')`.
      *                                 The metrics retrieved from the query will be specific to combinations
      *                                 of these fields. So if `array('referrer_name', 'referrer_keyword')`
@@ -52,9 +54,9 @@ class LogAggregatorProxy extends LogAggregator
      *                                 combination.
      * @param bool|string $where Additional condition for the `WHERE` clause. Can be used to filter
      *                           the set of visits that are considered for aggregation.
-     * @param array $additionalSelects Additional `SELECT` fields that are not included in the group by
+     * @param array<string> $additionalSelects Additional `SELECT` fields that are not included in the group by
      *                                 clause. These can be aggregate expressions, eg, `SUM(somecol)`.
-     * @param bool|array $metrics The set of metrics to calculate and return. If false, the query will select
+     * @param bool|array<int> $metrics The set of metrics to calculate and return. If false, the query will select
      *                            all of them. The following values can be used:
      *
      *                            - {@link \Piwik\Metrics::INDEX_NB_UNIQ_VISITORS}
@@ -70,12 +72,17 @@ class LogAggregatorProxy extends LogAggregator
      * @param bool|string $orderBy       Order By clause to add (e.g. user_id ASC)
      * @param int $timeLimit             Adds a MAX_EXECUTION_TIME query hint to the query if $timeLimit > 0
      *                                   for more details see {@link DbHelper::addMaxExecutionTimeHintToQuery}
+     * @param bool $rankingQueryGenerate if `true`, generates a SQL query / bind array pair and returns it. If false, the
+     *                                   ranking query SQL will be immediately executed and the results returned.
+     * @param array<string|array{
+     *   table: string,
+     *   tableAlias?: string,
+     *   joinOn?: string
+     * }> $extraFrom                      Additional tables to include in the FROM clause
      *
      * @return mixed A Zend_Db_Statement if `$rankingQuery` isn't supplied, otherwise the result of
      *               {@link \Piwik\RankingQuery::execute()}. Read {@link queryVisitsByDimension() this}
      *               to see what aggregate data is calculated by the query.
-     * @param bool $rankingQueryGenerate if `true`, generates a SQL query / bind array pair and returns it. If false, the
-     *                                   ranking query SQL will be immediately executed and the results returned.
      * @api
      */
     public function queryVisitsByDimension(
@@ -87,7 +94,7 @@ class LogAggregatorProxy extends LogAggregator
         $orderBy = false,
         $timeLimit = -1,
         $rankingQueryGenerate = false,
-        $extraFrom = [],
+        $extraFrom = []
     ) {
         $query = $this->getQueryByDimensionSql(
             $dimensions,
@@ -106,24 +113,27 @@ class LogAggregatorProxy extends LogAggregator
             return $query;
         }
 
-        file_put_contents('/srv/app/sql_log.txt', $query['sql'] . PHP_EOL, FILE_APPEND);
-
         return $this->logAggregator->getDb()->query($query['sql'], $query['bind']);
     }
 
     /**
      * Build the sql query used to query dimension data
      *
-     * @param array                     $dimensions
+     * @param array<string>             $dimensions
      * @param bool|string               $where
-     * @param array                     $additionalSelects
-     * @param bool|array                $metrics
+     * @param array<string>             $additionalSelects
+     * @param bool|array<int>           $metrics
      * @param bool|\Piwik\RankingQuery  $rankingQuery
      * @param bool|string               $orderBy
      * @param int                       $timeLimit
      * @param bool                      $rankingQueryGenerate
+     * @param array<string|array{
+     *   table: string,
+     *   tableAlias?: string,
+     *   joinOn?: string
+     * }> $extraFrom                    $extraFrom
      *
-     * @return array
+     * @return array{sql: string, bind: array<mixed>}|array<mixed>
      * @throws \Piwik\Exception\DI\DependencyException
      * @throws \Piwik\Exception\DI\NotFoundException
      */
@@ -148,13 +158,16 @@ class LogAggregatorProxy extends LogAggregator
         $groupBy = $this->logAggregator->getGroupByStatement($dimensions, $tableName);
         $orderBys = $orderBy ? [$orderBy] : [];
 
-        if ($rankingQuery) {
+        if ($rankingQuery && !is_bool($rankingQuery)) {
             $orderBys[] = '`' . Metrics::INDEX_NB_VISITS . '` DESC';
         }
 
         $query = $this->logAggregator->generateQuery($select, $from, $where, $groupBy, implode(', ', $orderBys));
+        if (!is_array($query)) {
+            throw new Exception('Query is not an array');
+        }
 
-        if ($rankingQuery) {
+        if ($rankingQuery && !is_bool($rankingQuery)) {
             unset($availableMetrics[Metrics::INDEX_MAX_ACTIONS]);
 
             // INDEX_NB_UNIQ_FINGERPRINTS is only processed if specifically asked for
@@ -164,7 +177,7 @@ class LogAggregatorProxy extends LogAggregator
 
             $sumColumns = array_keys($availableMetrics);
 
-            if ($metrics) {
+            if ($metrics && is_array($metrics)) {
                 $sumColumns = array_intersect($sumColumns, $metrics);
             }
 
@@ -205,14 +218,14 @@ class LogAggregatorProxy extends LogAggregator
      *
      * _Note: The metrics calculated by this query can be customized by the `$metrics` parameter._
      *
-     * @param array|string $dimensions One or more SELECT fields that will be used to group the log_action
+     * @param array<string>|string $dimensions One or more SELECT fields that will be used to group the log_action
      *                                 rows by. This parameter determines which log_action rows will be
      *                                 aggregated together.
      * @param bool|string $where Additional condition for the WHERE clause. Can be used to filter
      *                           the set of visits that are considered for aggregation.
-     * @param array $additionalSelects Additional SELECT fields that are not included in the group by
+     * @param array<string> $additionalSelects Additional SELECT fields that are not included in the group by
      *                                 clause. These can be aggregate expressions, eg, `SUM(somecol)`.
-     * @param bool|array $metrics The set of metrics to calculate and return. If `false`, the query will select
+     * @param bool|array<int> $metrics The set of metrics to calculate and return. If `false`, the query will select
      *                            all of them. The following values can be used:
      *
      *                              - {@link Piwik\Metrics::INDEX_NB_UNIQ_VISITORS}
@@ -231,6 +244,12 @@ class LogAggregatorProxy extends LogAggregator
      * @param string $secondaryOrderBy      A secondary order by clause for the ranking query
      * @param int $timeLimit                Adds a MAX_EXECUTION_TIME hint to the query if $timeLimit > 0
      *                                      for more details see {@link DbHelper::addMaxExecutionTimeHintToQuery}
+     * @param array<string|array{
+     *   table: string,
+     *   tableAlias?: string,
+     *   joinOn?: string
+     * }> $extraFrom                        Additional tables to include in the FROM clause
+     *
      * @return mixed A Zend_Db_Statement if `$rankingQuery` isn't supplied, otherwise the result of
      *               {@link Piwik\RankingQuery::execute()}. Read [this](#queryEcommerceItems-result-set)
      *               to see what aggregate data is calculated by the query.
@@ -255,7 +274,7 @@ class LogAggregatorProxy extends LogAggregator
         $where   = $this->logAggregator->getWhereStatement($tableName, LogAggregator::ACTION_DATETIME_FIELD, $where);
         $groupBy = $this->logAggregator->getGroupByStatement($dimensions, $tableName);
 
-        if ($joinLogActionOnColumn !== false) {
+        if ($joinLogActionOnColumn !== false && !is_bool($joinLogActionOnColumn)) {
             $multiJoin = is_array($joinLogActionOnColumn);
             if (!$multiJoin) {
                 $joinLogActionOnColumn = array($joinLogActionOnColumn);
@@ -288,10 +307,13 @@ class LogAggregatorProxy extends LogAggregator
         }
 
         $query = $this->logAggregator->generateQuery($select, $from, $where, $groupBy, $orderBy);
+        if (!is_array($query)) {
+            throw new Exception('Query is not an array');
+        }
 
-        if ($rankingQuery) {
+        if ($rankingQuery && !is_bool($rankingQuery)) {
             $sumColumns = array_keys($availableMetrics);
-            if ($metrics) {
+            if ($metrics && is_array($metrics)) {
                 $sumColumns = array_intersect($sumColumns, $metrics);
             }
 

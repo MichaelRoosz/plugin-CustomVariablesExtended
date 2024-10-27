@@ -2,6 +2,7 @@
 
 namespace Piwik\Plugins\CustomVariablesExtended\RecordBuilders;
 
+use Exception;
 use Piwik\ArchiveProcessor;
 use Piwik\ArchiveProcessor\Record;
 use Piwik\ArchiveProcessor\RecordBuilder;
@@ -18,6 +19,7 @@ use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableLinkVisitAction;
 use Piwik\Plugins\CustomVariablesExtended\LogAggregatorProxy;
 use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableVisit;
 use Piwik\Tracker\GoalManager;
+use Zend_Db_Statement;
 
 class CustomVariablesRecordBuilder extends RecordBuilder
 {
@@ -26,10 +28,16 @@ class CustomVariablesRecordBuilder extends RecordBuilder
         parent::__construct();
 
         $this->maxRowsInTable = Config::getInstance()->General['datatable_archiving_maximum_rows_custom_variables']
+            /** @phpstan-ignore property.notFound */
             ?? Config::getInstance()->General['datatable_archiving_maximum_rows_custom_dimensions'];
+
         $this->maxRowsInSubtable = Config::getInstance()->General['datatable_archiving_maximum_rows_subtable_custom_variables']
+            /** @phpstan-ignore property.notFound */
             ?? Config::getInstance()->General['datatable_archiving_maximum_rows_subtable_custom_dimensions'];
+
+        /** @phpstan-ignore assign.propertyType */
         $this->columnToSortByBeforeTruncation = Metrics::INDEX_NB_VISITS;
+
         $this->columnAggregationOps = ['slots' => 'uniquearraymerge'];
     }
 
@@ -67,7 +75,17 @@ class CustomVariablesRecordBuilder extends RecordBuilder
         return [Archiver::CUSTOM_VARIABLE_RECORD_NAME => $record];
     }
 
-    protected function aggregateCustomVariable(DataTable $record, array &$metadata, array &$metadataFlat, LogAggregator $logAggregator, string $index): void
+    /**
+     * @param array<string, array{
+     *   slots: array<array{
+     *     scope: string,
+     *     index: int
+     *   }>
+     * }> $metadata
+     *
+     * @param array<string, bool> $metadataFlat
+     */
+    protected function aggregateCustomVariable(DataTable $record, array &$metadata, array &$metadataFlat, LogAggregator $logAggregator, int $index): void
     {
         $logAggregatorProxy = new LogAggregatorProxy($logAggregator);
 
@@ -84,18 +102,29 @@ class CustomVariablesRecordBuilder extends RecordBuilder
         $this->aggregateFromConversions($record, $query, $keyField, $valueField);
     }
 
+    /**
+     * @param array<string, array{
+     *   slots: array<array{
+     *     scope: string,
+     *     index: int
+     *   }>
+     * }> $metadata
+     *
+     * @param array<string, bool> $metadataFlat
+     */
     protected function aggregateFromVisits(
         DataTable $record,
         array &$metadata,
         array &$metadataFlat,
-        $query,
+        Zend_Db_Statement $query,
         string $keyField,
         string $valueField
     ): void {
         while ($row = $query->fetch()) {
 
-            file_put_contents('/srv/app/query_log_new.txt', json_encode($row, JSON_PRETTY_PRINT) . PHP_EOL, FILE_APPEND);
-
+            if (!is_array($row)) {
+                continue;
+            }
 
             $key = $row[$keyField];
             $value = $this->cleanCustomVarValue($row[$valueField]);
@@ -117,6 +146,7 @@ class CustomVariablesRecordBuilder extends RecordBuilder
 
             // Edge case fail safe
             if (!empty($existingRow)
+                /** @phpstan-ignore argument.type */
                 && !$existingRow->hasColumn(Metrics::INDEX_NB_VISITS)
             ) {
                 continue;
@@ -125,6 +155,7 @@ class CustomVariablesRecordBuilder extends RecordBuilder
             // In case the existing Row had no action metrics (eg. Custom Variable XYZ with "visit" scope)
             // but the new Row has action metrics (eg. same Custom Variable XYZ this time with a "page" scope)
             if (!empty($existingRow)
+                /** @phpstan-ignore argument.type */
                 && !$existingRow->hasColumn(Metrics::INDEX_MAX_ACTIONS)
             ) {
                 $toZero = [
@@ -135,6 +166,7 @@ class CustomVariablesRecordBuilder extends RecordBuilder
                     Metrics::INDEX_NB_VISITS_CONVERTED,
                 ];
                 foreach ($toZero as $metric) {
+                    /** @phpstan-ignore argument.type */
                     $existingRow->setColumn($metric, 0);
                 }
             }
@@ -144,7 +176,7 @@ class CustomVariablesRecordBuilder extends RecordBuilder
         }
     }
 
-    protected function cleanCustomVarValue($value)
+    protected function cleanCustomVarValue(?string $value): string
     {
         if ($value !== null && strlen($value)) {
             return $value;
@@ -152,15 +184,30 @@ class CustomVariablesRecordBuilder extends RecordBuilder
         return Archiver::LABEL_CUSTOM_VALUE_NOT_DEFINED;
     }
 
+    /**
+     * @param array<string, array{
+     *   slots: array<array{
+     *     scope: string,
+     *     index: int
+     *   }>
+     * }> $metadata
+     *
+     * @param array<string, bool> $metadataFlat
+     */
     protected function aggregateFromActions(
         DataTable $record,
         array &$metadata,
         array &$metadataFlat,
-        $query,
+        Zend_Db_Statement $query,
         string $keyField,
         string $valueField
     ): void {
         while ($row = $query->fetch()) {
+
+            if (!is_array($row)) {
+                continue;
+            }
+
             $key = $row[$keyField];
             $value = $this->cleanCustomVarValue($row[$valueField]);
 
@@ -180,6 +227,16 @@ class CustomVariablesRecordBuilder extends RecordBuilder
         }
     }
 
+    /**
+     * @param array<string, array{
+     *   slots: array<array{
+     *     scope: string,
+     *     index: int
+     *   }>
+     * }> $metadata
+     *
+     * @param array<string, bool> $metadataFlat
+     */
     private function addMetadata(array &$metadata, array &$metadataFlat, string $keyField, string $label, string $scope): void
     {
         $index = (int) str_replace('custom_var_k', '', $keyField);
@@ -199,7 +256,7 @@ class CustomVariablesRecordBuilder extends RecordBuilder
     /**
      * @param string $key
      * @param string $value
-     * @param $row
+     * @param array<mixed> $row
      * @return bool True if the $row metrics were already added to the ->metrics
      */
     protected function aggregateEcommerceCategories(DataTable $record, string $key, string $value, array $row): bool
@@ -230,6 +287,9 @@ class CustomVariablesRecordBuilder extends RecordBuilder
         return $ecommerceCategoriesAggregated;
     }
 
+    /**
+     * @param array<mixed> $row
+     */
     protected function aggregateActionByKeyAndValue(DataTable $record, string $key, string $value, array $row): void
     {
         $columns = [
@@ -242,8 +302,9 @@ class CustomVariablesRecordBuilder extends RecordBuilder
 
         // Edge case fail safe
         $subtable = $toplevelRow->getSubtable();
-        $existingRow = !empty($subtable) ? $subtable->getRowFromLabel($value) : null;
+        $existingRow = !empty($subtable) && !is_bool($subtable) ? $subtable->getRowFromLabel($value) : null;
         if (!empty($existingRow)
+            /** @phpstan-ignore argument.type */
             && !$existingRow->hasColumn(Metrics::INDEX_NB_VISITS)
         ) {
             return;
@@ -255,24 +316,26 @@ class CustomVariablesRecordBuilder extends RecordBuilder
             // Price tracking on Ecommerce product/category pages:
             // the average is returned from the SQL query so the price is not "summed" like other metrics
             $index = Metrics::INDEX_ECOMMERCE_ITEM_PRICE_VIEWED;
-            if (!empty($row[$index])) {
+            if (!empty($row[$index]) && is_numeric($row[$index])) {
+                /** @phpstan-ignore argument.type */
                 $subtableRow->setColumn($index, (float)$row[$index]);
             }
         }
     }
 
-    protected static function isReservedKey($key)
+    protected static function isReservedKey(string $key): bool
     {
         return in_array($key, API::getReservedCustomVariableKeys());
     }
 
-    protected function aggregateFromConversions(DataTable $record, $query, string $keyField, string $valueField): void
+    protected function aggregateFromConversions(DataTable $record, Zend_Db_Statement $query, string $keyField, string $valueField): void
     {
-        if ($query === false) {
-            return;
-        }
-
         while ($row = $query->fetch()) {
+
+            if (!is_array($row)) {
+                continue;
+            }
+
             $key = $row[$keyField];
 
             $value = $this->cleanCustomVarValue($row[$valueField]);
@@ -306,11 +369,16 @@ class CustomVariablesRecordBuilder extends RecordBuilder
     {
         foreach ($record->getRows() as $row) {
             $label = $row->getColumn('label');
-            if (!self::isReservedKey($label)
+            if ((!is_string($label) || !self::isReservedKey($label))
                 && $this->isActionsRow($row)
             ) {
+                /** @phpstan-ignore argument.type */
                 $row->deleteColumn(Metrics::INDEX_NB_UNIQ_VISITORS);
+
+                /** @phpstan-ignore argument.type */
                 $row->deleteColumn(Metrics::INDEX_NB_VISITS);
+
+                /** @phpstan-ignore argument.type */
                 $row->deleteColumn(Metrics::INDEX_NB_USERS);
             }
         }
@@ -318,13 +386,14 @@ class CustomVariablesRecordBuilder extends RecordBuilder
 
     private function isActionsRow(DataTable\Row $row): bool
     {
+        /** @phpstan-ignore argument.type */
         return count($row->getColumns()) == 4 && $row->hasColumn(Metrics::INDEX_NB_ACTIONS);
     }
 
     public function queryVisitsByDimension(
         LogAggregatorProxy $logAggregatorProxy,
-        $index
-    ) {
+        int $index
+    ): Zend_Db_Statement {
         $tableName = LogTableVisit::TABLE_NAME;
 
         $dimensions = [
@@ -343,13 +412,18 @@ class CustomVariablesRecordBuilder extends RecordBuilder
             ],
         ];
 
-        return $logAggregatorProxy->queryVisitsByDimension($dimensions, $where, [], false, false, false, -1, false, $extraFrom);
+        $query = $logAggregatorProxy->queryVisitsByDimension($dimensions, $where, [], false, false, false, -1, false, $extraFrom);
+        if (!($query instanceof Zend_Db_Statement)) {
+            throw new Exception('queryVisitsByDimension did not return a Zend_Db_Statement');
+        }
+
+        return $query;
     }
 
     public function queryActionsByDimension(
         LogAggregatorProxy $logAggregatorProxy,
-        $index
-    ) {
+        int $index
+    ): Zend_Db_Statement {
         $tableName = LogTableLinkVisitAction::TABLE_NAME;
 
         $dimensions = [
@@ -368,13 +442,18 @@ class CustomVariablesRecordBuilder extends RecordBuilder
             ],
         ];
 
-        return $logAggregatorProxy->queryActionsByDimension($dimensions, $where, [], false, null, false, null, -1, $extraFrom);
+        $query = $logAggregatorProxy->queryActionsByDimension($dimensions, $where, [], false, null, false, null, -1, $extraFrom);
+        if (!($query instanceof Zend_Db_Statement)) {
+            throw new Exception('queryActionsByDimension did not return a Zend_Db_Statement');
+        }
+
+        return $query;
     }
 
     public function queryConversionsByDimension(
         LogAggregator $logAggregator,
-        $index
-    ) {
+        int $index
+    ): Zend_Db_Statement {
         $tableName = LogTableConversion::TABLE_NAME;
 
         $dimensions = [
@@ -396,6 +475,11 @@ class CustomVariablesRecordBuilder extends RecordBuilder
             ],
         ];
 
-        return $logAggregator->queryConversionsByDimension($dimensions, $where, [], $extraFrom);
+        $query = $logAggregator->queryConversionsByDimension($dimensions, $where, [], $extraFrom);
+        if (!($query instanceof Zend_Db_Statement)) {
+            throw new Exception('queryConversionsByDimension did not return a Zend_Db_Statement');
+        }
+
+        return $query;
     }
 }

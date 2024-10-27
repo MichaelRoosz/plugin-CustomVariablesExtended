@@ -11,7 +11,8 @@ class CustomVariablesExtendedSubcategory extends Subcategory
     protected $id = 'CustomVariablesExtended_CustomVariables';
     protected $order = 45;
 
-    public function getHelp()
+    /** @phpstan-ignore method.childReturnType  */
+    public function getHelp(): string
     {
         return '<p>' . Piwik::translate('CustomVariablesExtended_CustomVariablesSubcategoryHelp1') . '</p>'
             . '<p><a href="https://matomo.org/docs/custom-variables/" rel="noreferrer noopener" target="_blank">' . Piwik::translate('CustomVariablesExtended_CustomVariablesSubcategoryHelp2') . '</a></p>'

@@ -16,7 +16,7 @@ class CustomVariablesValuesFromNameId extends BaseFilter
     /**
      * @param DataTable $table
      */
-    public function filter($table)
+    public function filter($table): void
     {
         $notDefinedLabel = Piwik::translate('General_NotDefined', Piwik::translate('CustomVariablesExtended_ColumnCustomVariableValue'));
 

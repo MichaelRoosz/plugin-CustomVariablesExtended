@@ -12,7 +12,10 @@ class LogTableConversion
 {
     public const TABLE_NAME = 'log_custom_variable_conversion';
 
+    /** @var string $tableName */
     private $tableName = self::TABLE_NAME;
+
+    /** @var string $tableNamePrefixed */
     private $tableNamePrefixed;
 
     public function __construct()
@@ -20,13 +23,34 @@ class LogTableConversion
         $this->tableNamePrefixed = Common::prefixTable($this->tableName);
     }
 
+    /**
+     * @return \Piwik\Tracker\Db|\Piwik\Db
+     */
     private function getDb()
     {
-        return Db::get();
+        $db = Db::get();
+
+        if ($db instanceof \Piwik\Tracker\Db) {
+            return $db;
+        }
+
+        if ($db instanceof \Piwik\Db) {
+            return $db;
+        }
+
+        throw new \Exception('Unsupported database type');
     }
 
-    public function insertCustomVariable($idSite, $idVisit, $idGoal, $buster, $scope, $index, $name, $value)
-    {
+    public function insertCustomVariable(
+        int $idSite,
+        int $idVisit,
+        int $idGoal,
+        int $buster,
+        string $scope,
+        int $index,
+        string $name,
+        string $value
+    ): void {
         $scopeId = CustomVariablesExtended::scopeNameToId($scope);
 
         $this->getDb()->query(
@@ -53,7 +77,7 @@ class LogTableConversion
         );
     }
 
-    public function install()
+    public function install(): void
     {
         $table = "`idvisit` BIGINT UNSIGNED NOT NULL,
                   `idgoal` INT UNSIGNED NOT NULL,
@@ -69,7 +93,7 @@ class LogTableConversion
         DbHelper::createTable($this->tableName, $table);
     }
 
-    public function uninstall()
+    public function uninstall(): void
     {
         Db::dropTables(array($this->tableNamePrefixed));
     }

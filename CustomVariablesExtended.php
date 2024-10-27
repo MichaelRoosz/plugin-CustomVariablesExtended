@@ -27,12 +27,15 @@ class CustomVariablesExtended extends Plugin
     public const SCOPE_ID_VISIT = 2;
     public const SCOPE_ID_CONVERSION = 3;
 
-    public function isTrackerPlugin()
+    public function isTrackerPlugin(): bool
     {
         return true;
     }
 
-    public function registerEvents()
+    /**
+     * @return array<string, string>
+     */
+    public function registerEvents(): array
     {
         return [
             'Translate.getClientSideTranslationKeys' => 'getClientSideTranslationKeys',
@@ -45,21 +48,24 @@ class CustomVariablesExtended extends Plugin
         ];
     }
 
-    public function install()
+    public function install(): void
     {
         (new LogTableConversion())->install();
         (new LogTableLinkVisitAction())->install();
         (new LogTableVisit())->install();
     }
 
-    public function uninstall()
+    public function uninstall(): void
     {
         (new LogTableConversion())->uninstall();
         (new LogTableLinkVisitAction())->uninstall();
         (new LogTableVisit())->uninstall();
     }
 
-    public function getClientSideTranslationKeys(&$translationKeys)
+    /**
+     * @param array<string> $translationKeys
+     */
+    public function getClientSideTranslationKeys(array &$translationKeys): void
     {
         $translationKeys[] = 'CustomVariablesExtended_CustomVariables';
         $translationKeys[] = 'CustomVariablesExtended_ManageDescription';
@@ -78,23 +84,33 @@ class CustomVariablesExtended extends Plugin
         $translationKeys[] = 'General_TrackingScopePage';
     }
 
-    public function getStylesheetFiles(&$stylesheets)
+    /**
+     * @param array<string> $stylesheets
+     */
+    public function getStylesheetFiles(&$stylesheets): void
     {
         $stylesheets[] = "plugins/CustomVariablesExtended/vue/src/ManageCustomVars/ManageCustomVars.less";
     }
 
-    public function addDimensions(&$instances)
+    /**
+     * @param array<\Piwik\Columns\Dimension> $dimensions
+     */
+    public function addDimensions(&$dimensions): void
     {
         foreach ([self::SCOPE_VISIT, self::SCOPE_PAGE, self::SCOPE_CONVERSION] as $scope) {
             for ($i = self::FIRST_CUSTOM_VARIABLE_INDEX; $i <= self::LAST_CUSTOM_VARIABLE_INDEX; $i++) {
                 $custom = new CustomVariableDimension();
                 $custom->initCustomDimension($scope, $i);
-                $instances[] = $custom;
+                $dimensions[] = $custom;
             }
         }
     }
 
-    public function provideActionDimensionFields(&$fields, &$joins)
+    /**
+     * @param array<string> $fields
+     * @param array<string> $joins
+     */
+    public function provideActionDimensionFields(&$fields, &$joins): void
     {
         for ($i = self::FIRST_CUSTOM_VARIABLE_INDEX; $i <= self::LAST_CUSTOM_VARIABLE_INDEX; $i++) {
             $fields[] = 'cv_lva_'. $i . '.name as custom_var_k' . $i;
@@ -108,13 +124,22 @@ class CustomVariablesExtended extends Plugin
         }
     }
 
-    public function newConversionInformation(&$conversion, $visitInformation, $request, $action)
+    /**
+     * @param array{idgoal: int, buster: int} $conversion
+     * @param array{idvisit: int} $visitInformation
+     * @param \Piwik\Tracker\Request $request
+     * @param \Piwik\Tracker\Action|null $action
+     */
+    public function newConversionInformation(&$conversion, $visitInformation, $request, $action): void
     {
         $processor = new CustomVariablesExtendedRequestProcessor();
         $processor->onNewConversionInformation($conversion, $visitInformation, $request, $action);
     }
 
-    public function getReportsWithGoalMetrics(&$reportsWithGoals)
+    /**
+     * @param array<string, mixed> $reportsWithGoals
+     */
+    public function getReportsWithGoalMetrics(&$reportsWithGoals): void
     {
         $report = new GetCustomVariables();
         $report->prepareForGoalMetrics();
@@ -133,7 +158,9 @@ class CustomVariablesExtended extends Plugin
         foreach ($reportsWithGoals as $reportWithGoals) {
             $newReportsWithGoals[] = $reportWithGoals;
 
-            if ($reportWithGoals['module'] === 'CustomVariables') {
+            if (is_array($reportWithGoals)
+                && $reportWithGoals['module'] === 'CustomVariables') {
+
                 $newReportsWithGoals[] = $reportToInsert;
                 $didInsert = true;
             }
@@ -146,14 +173,17 @@ class CustomVariablesExtended extends Plugin
         $reportsWithGoals = $newReportsWithGoals;
     }
 
-    public function getTablesInstalled(&$allTablesInstalled)
+    /**
+     * @param array<string> $allTablesInstalled
+     */
+    public function getTablesInstalled(&$allTablesInstalled): void
     {
         $allTablesInstalled[] = Common::prefixTable(LogTableVisit::TABLE_NAME);
         $allTablesInstalled[] = Common::prefixTable(LogTableLinkVisitAction::TABLE_NAME);
         $allTablesInstalled[] = Common::prefixTable(LogTableConversion::TABLE_NAME);
     }
 
-    public static function scopeNameToId($scope)
+    public static function scopeNameToId(string $scope): int
     {
         switch ($scope) {
             case self::SCOPE_VISIT:
@@ -167,7 +197,7 @@ class CustomVariablesExtended extends Plugin
         throw new Exception('Invalid scope');
     }
 
-    public static function scopeIdToName($scopeId)
+    public static function scopeIdToName(int $scopeId): string
     {
         switch ($scopeId) {
             case self::SCOPE_ID_VISIT:

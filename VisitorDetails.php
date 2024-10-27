@@ -9,9 +9,15 @@ use Piwik\Plugins\CustomVariablesExtended\Dao\LogTableVisit;
 
 class VisitorDetails extends VisitorDetailsAbstract
 {
+    /**
+     * @var array<string,array<string,array<string,int>>> $customVariables
+     */
     protected $customVariables = [];
 
-    public function extendVisitorDetails(&$visitor)
+    /**
+     * @param array<string,mixed> $visitor
+     */
+    public function extendVisitorDetails(&$visitor): void
     {
         $customVariables = [];
 
@@ -31,7 +37,12 @@ class VisitorDetails extends VisitorDetailsAbstract
         $visitor['customVariablesExtended'] = $customVariables;
     }
 
-    public function extendActionDetails(&$action, $nextAction, $visitorDetails)
+    /**
+     * @param array<string,mixed> $action
+     * @param array<string,mixed> $nextAction
+     * @param array<string,mixed> $visitorDetails
+     */
+    public function extendActionDetails(&$action, $nextAction, $visitorDetails): void
     {
         $customVariablesPage = [];
 
@@ -57,29 +68,50 @@ class VisitorDetails extends VisitorDetailsAbstract
         }
     }
 
-    public function renderActionTooltip($action, $visitInfo)
+    /**
+     * @param array<string,mixed> $action
+     * @param array<string,mixed> $visitInfo
+     *
+     * @return array<array<int|string>>
+     */
+    public function renderActionTooltip($action, $visitInfo): array
     {
         if (empty($action['customVariablesExtended'])) {
             return [];
         }
 
         $view = new View('@CustomVariablesExtended/_actionTooltip');
+
+        /** @phpstan-ignore property.notFound */
         $view->action = $action;
+
         return [[ 41, $view->render() ]];
     }
 
-    public function renderVisitorDetails($visitInfo)
+    /**
+     * @param array<string,mixed> $visitInfo
+     *
+     * @return array<array<int|string>>
+     */
+    public function renderVisitorDetails($visitInfo): array
     {
         if (empty($visitInfo['customVariablesExtended'])) {
             return [];
         }
 
         $view = new View('@CustomVariablesExtended/_visitorDetails');
+
+        /** @phpstan-ignore property.notFound */
         $view->visitInfo = $visitInfo;
+
         return [[ 51, $view->render() ]];
     }
 
-    public function initProfile($visits, &$profile)
+    /**
+     * @param \Piwik\DataTable $visits
+     * @param array<string,mixed> $profile
+     */
+    public function initProfile($visits, &$profile): void
     {
         $this->customVariables = [
             CustomVariablesExtended::SCOPE_PAGE => [],
@@ -87,17 +119,26 @@ class VisitorDetails extends VisitorDetailsAbstract
         ];
     }
 
-    public function handleProfileAction($action, &$profile)
+    /**
+     * @param array<string,mixed> $action
+     * @param array<string,mixed> $profile
+     */
+    public function handleProfileAction($action, &$profile): void
     {
-        if (empty($action['customVariablesExtended'])) {
+        if (!is_array($action)) {
+            return;
+        }
+
+        if (empty($action['customVariablesExtended'])
+            || !is_array($action['customVariablesExtended'])) {
             return;
         }
 
         foreach ($action['customVariablesExtended'] as $index => $customVariable) {
 
             $scope = CustomVariablesExtended::SCOPE_PAGE;
-            $name = $customVariable['customVariablePageName'.$index];
-            $value = $customVariable['customVariablePageValue'.$index];
+            $name = (string) $customVariable['customVariablePageName'.$index];
+            $value = (string) $customVariable['customVariablePageValue'.$index];
 
             if (!$value) {
                 continue;
@@ -115,17 +156,22 @@ class VisitorDetails extends VisitorDetailsAbstract
         }
     }
 
-    public function handleProfileVisit($visit, &$profile)
+    /**
+     * @param \Piwik\DataTable\Row $visit
+     * @param array<string,mixed> $profile
+     */
+    public function handleProfileVisit($visit, &$profile): void
     {
-        if (empty($visit['customVariablesExtended'])) {
+        if (empty($visit['customVariablesExtended'])
+            || !is_array($visit['customVariablesExtended'])) {
             return;
         }
 
         foreach ($visit['customVariablesExtended'] as $index => $customVariable) {
 
             $scope = CustomVariablesExtended::SCOPE_VISIT;
-            $name = $customVariable['customVariableName'.$index];
-            $value = $customVariable['customVariableValue'.$index];
+            $name = (string) $customVariable['customVariableName'.$index];
+            $value = (string) $customVariable['customVariableValue'.$index];
 
             if (!$value) {
                 continue;
@@ -143,7 +189,11 @@ class VisitorDetails extends VisitorDetailsAbstract
         }
     }
 
-    public function finalizeProfile($visits, &$profile)
+    /**
+     * @param \Piwik\DataTable $visits
+     * @param array<string,mixed> $profile
+     */
+    public function finalizeProfile($visits, &$profile): void
     {
         $customVariables = $this->customVariables;
         foreach ($customVariables as $scope => &$variables) {
@@ -162,7 +212,18 @@ class VisitorDetails extends VisitorDetailsAbstract
         }
     }
 
-    protected function convertForProfile($customVariables)
+    /**
+     * @param array<string,array<string,array<string,int>>> $customVariables
+     *
+     * @return array<string,array<array{
+     *   name: string,
+     *   values: array<array{
+     *      value: string,
+     *      count: int
+     *   }>
+     * }>>
+     */
+    protected function convertForProfile(array $customVariables): array
     {
         $convertedVariables = [];
 

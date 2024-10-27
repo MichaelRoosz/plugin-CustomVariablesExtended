@@ -10,7 +10,7 @@ use Piwik\Plugins\CustomVariablesExtended\CustomVariablesExtended;
 
 class GetCustomVariables extends Base
 {
-    protected function init()
+    protected function init(): void
     {
         $dimension = new CustomVariableDimension();
         $dimension->initCustomDimension(CustomVariablesExtended::SCOPE_VISIT, CustomVariablesExtended::FIRST_CUSTOM_VARIABLE_INDEX);
@@ -29,13 +29,13 @@ class GetCustomVariables extends Base
         $this->hasGoalMetrics = false;
     }
 
-    public function prepareForGoalMetrics()
+    public function prepareForGoalMetrics(): void
     {
         $this->hasGoalMetrics = true;
         $this->categoryId = 'VisitsSummary_VisitsSummary';
     }
 
-    public function configureView(ViewDataTable $view)
+    public function configureView(ViewDataTable $view): void
     {
         $view->config->columns_to_display = array('label', 'nb_actions', 'nb_visits');
         $view->config->addTranslation('label', Piwik::translate('CustomVariablesExtended_ColumnCustomVariableName'));
@@ -51,10 +51,7 @@ class GetCustomVariables extends Base
         };
     }
 
-    /**
-     * @return string
-     */
-    public function getFooterMessageExplanationMissingMetrics()
+    public function getFooterMessageExplanationMissingMetrics(): string
     {
         $metrics = sprintf(
             "'%s', '%s' %s '%s'",
@@ -73,18 +70,13 @@ class GetCustomVariables extends Base
             // no footer message for subtables
             $out = '';
             Piwik::postEvent('Template.afterCustomVariablesReport', array(&$out));
-            if (!empty($message)) {
-                $message .= $out;
-            }
+            $message .= $out;
         }
 
         return $message;
     }
 
-    /**
-     * @return bool
-     */
-    public function isReportContainsUnsetVisitsColumns(DataTable $report)
+    public function isReportContainsUnsetVisitsColumns(DataTable $report): bool
     {
         $visits = $report->getColumn('nb_visits');
         $isVisitsMetricsSometimesUnset = in_array(false, $visits);

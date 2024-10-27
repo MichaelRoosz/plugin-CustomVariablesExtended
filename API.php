@@ -19,20 +19,22 @@ class API extends \Piwik\Plugin\API
      * @param int $idSite
      * @param string $period
      * @param Date $date
-     * @param string $segment
+     * @param string|false $segment
+     * @param bool $flat
      * @param bool $expanded
-     * @param int $idSubtable
+     * @param int|null $idSubtable
      *
      * @return DataTable|DataTable\Map
      */
     protected function getDataTable($idSite, $period, $date, $segment, $expanded, $flat, $idSubtable)
     {
+        /** @phpstan-ignore argument.type */
         $dataTable = Archive::createDataTableFromArchive(Archiver::CUSTOM_VARIABLE_RECORD_NAME, $idSite, $period, $date, $segment, $expanded, $flat, $idSubtable);
-        $dataTable->queueFilter('ColumnDelete', 'nb_uniq_visitors');
+        $dataTable->queueFilter('ColumnDelete', ['nb_uniq_visitors']);
 
         if ($flat) {
             $dataTable->filterSubtables('Sort', array(Metrics::INDEX_NB_ACTIONS, 'desc', $naturalSort = false, $expanded));
-            $dataTable->queueFilterSubtables('ColumnDelete', 'nb_uniq_visitors');
+            $dataTable->queueFilterSubtables('ColumnDelete', ['nb_uniq_visitors']);
         }
 
         return $dataTable;
@@ -42,7 +44,7 @@ class API extends \Piwik\Plugin\API
      * @param int $idSite
      * @param string $period
      * @param Date $date
-     * @param string|bool $segment
+     * @param string|false $segment
      * @param bool $expanded
      * @param bool $_leavePiwikCoreVariables
      * @param bool $flat
@@ -78,10 +80,9 @@ class API extends \Piwik\Plugin\API
     }
 
     /**
-     * @ignore
-     * @return array
+     * @return array<string>
      */
-    public static function getReservedCustomVariableKeys()
+    public static function getReservedCustomVariableKeys(): array
     {
         // Note: _pk_scat and _pk_scount has been used for site search, but aren't in use anymore
         return array('_pks', '_pkn', '_pkc', '_pkp', '_pk_scat', '_pk_scount');
@@ -92,7 +93,7 @@ class API extends \Piwik\Plugin\API
      * @param string $period
      * @param Date $date
      * @param int $idSubtable
-     * @param string|bool $segment
+     * @param string|false $segment
      * @param bool $_leavePriceViewedColumn
      *
      * @return DataTable|DataTable\Map
@@ -119,54 +120,84 @@ class API extends \Piwik\Plugin\API
      * Get a list of all available custom variable slots (scope + index) and which names have been used so far in
      * each slot since the beginning of the website.
      *
-     * @param int $idSite
-     * @return array
+     * @return array<array{
+     *   scope: string,
+     *   index: int,
+     *   usages: array<array{
+     *     name: string,
+     *     nb_visits: int,
+     *     nb_actions: int
+     *   }>
+     * }>
      */
-    public function getUsagesOfSlots($idSite)
+    public function getUsagesOfSlots(int $idSite): array
     {
         Piwik::checkUserHasAdminAccess($idSite);
-
 
         $firstIndex = CustomVariablesExtended::FIRST_CUSTOM_VARIABLE_INDEX;
         $lastIndex = CustomVariablesExtended::LAST_CUSTOM_VARIABLE_INDEX;
         $cvarCount = $lastIndex - $firstIndex + 1;
 
-        $usedCustomVariables = array(
-            'visit' => array_fill($firstIndex, $cvarCount, array()),
-            'page'  => array_fill($firstIndex, $cvarCount, array()),
-        );
+        $usedCustomVariables = [
+            'visit' => array_fill($firstIndex, $cvarCount, []),
+            'page'  => array_fill($firstIndex, $cvarCount, []),
+        ];
 
-        /** @var DataTable $customVarUsages */
         $today = StaticContainer::get('CustomVariablesExtended.today');
         $date = '2008-12-12,' . $today;
+
+        /** @var \Piwik\DataTable $customVarUsages */
         $customVarUsages = Request::processRequest(
             'CustomVariablesExtended.getCustomVariables',
-            array('idSite' => $idSite, 'period' => 'range', 'date' => $date,
-                  'format' => 'original')
+            [
+                'idSite' => $idSite,
+                'period' => 'range',
+                'date' => $date,
+                'format' => 'original'
+            ]
         );
 
         foreach ($customVarUsages->getRows() as $row) {
             $slots = $row->getMetadata('slots');
 
-            if ($slots) {
+            if ($slots && is_array($slots)) {
+
+                $name = $row->getColumn('label');
+                if (!is_string($name)) {
+                    continue;
+                }
+
+                $nbVisits = $row->getColumn('nb_visits');
+                if (!is_int($nbVisits)) {
+                    continue;
+                }
+
+                $nbActions = $row->getColumn('nb_actions');
+                if (!is_int($nbActions)) {
+                    continue;
+                }
+
                 foreach ($slots as $slot) {
-                    $usedCustomVariables[$slot['scope']][$slot['index']][] = array(
-                        'name' => $row->getColumn('label'),
-                        'nb_visits' => $row->getColumn('nb_visits'),
-                        'nb_actions' => $row->getColumn('nb_actions'),
-                    );
+                    $scope = (string)$slot['scope'];
+                    $index = (int)$slot['index'];
+
+                    $usedCustomVariables[$scope][$index][] = [
+                        'name' => $name,
+                        'nb_visits' => $nbVisits,
+                        'nb_actions' => $nbActions,
+                    ];
                 }
             }
         }
 
-        $grouped = array();
+        $grouped = [];
         foreach ($usedCustomVariables as $scope => $scopes) {
             foreach ($scopes as $index => $cvars) {
-                $grouped[] = array(
+                $grouped[] = [
                     'scope' => $scope,
                     'index' => $index,
                     'usages' => $cvars
-                );
+                ];
             }
         }
 
