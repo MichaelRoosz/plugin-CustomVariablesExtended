@@ -73,16 +73,7 @@ class LogTableLinkVisitAction {
      * @return \Piwik\Tracker\Db|\Piwik\Db
      */
     private function getDb() {
-        $db = Db::get();
-
-        if ($db instanceof \Piwik\Tracker\Db) {
-            return $db;
-        }
-
-        if ($db instanceof \Piwik\Db) {
-            return $db;
-        }
-
-        throw new \Exception('Unsupported database type');
+        /** @phpstan-ignore return.type */
+        return Db::get();
     }
 }
