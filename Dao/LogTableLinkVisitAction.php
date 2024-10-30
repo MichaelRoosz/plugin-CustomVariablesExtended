@@ -26,14 +26,23 @@ class LogTableLinkVisitAction {
         $this->tableNamePrefixed = Common::prefixTable($this->tableName);
     }
 
-    public function insertCustomVariable(int $idSite, int $idVisit, int $idLinkVisitAction, int $index, string $name, string $value): void {
+    public function insertCustomVariable(
+        int $idSite,
+        int $idVisit,
+        int $idLinkVisitAction,
+        string $serverTime,
+        int $index,
+        string $name,
+        string $value
+    ): void {
         $this->getDb()->query(
             'INSERT INTO ' . $this->tableNamePrefixed
-                . ' (`idlink_va`, `index`, `idsite`, `idvisit`, `name`, `value`)'
-                . ' VALUES (?,?,?,?,?,?)'
+                . ' (`idlink_va`, `index`, `idsite`, `idvisit`, `server_datetime`, `name`, `value`)'
+                . ' VALUES (?,?,?,?,?,?,?)'
                 . ' ON DUPLICATE KEY UPDATE '
                 . ' `idsite` = ?,'
                 . ' `idvisit` = ?,'
+                . ' `server_datetime` = ?,'
                 . ' `name` = ?,'
                 . ' `value` = ?',
             [
@@ -41,10 +50,12 @@ class LogTableLinkVisitAction {
                 $index,
                 $idSite,
                 $idVisit,
+                $serverTime,
                 $name,
                 $value,
                 $idSite,
                 $idVisit,
+                $serverTime,
                 $name,
                 $value,
             ]
@@ -56,11 +67,12 @@ class LogTableLinkVisitAction {
                   `index` SMALLINT UNSIGNED NOT NULL,
                   `idsite` INT UNSIGNED NOT NULL,
                   `idvisit` BIGINT UNSIGNED NOT NULL,
+                  `server_datetime` DATETIME NOT NULL,
                   `name` VARCHAR(' . CustomVariablesExtended::MAX_LENGTH_VARIABLE_NAME . ') DEFAULT NULL,
                   `value` VARCHAR(' . CustomVariablesExtended::MAX_LENGTH_VARIABLE_VALUE . ') DEFAULT NULL,
                   PRIMARY KEY (`idlink_va`, `index`),
                   KEY (`idvisit`),
-                  KEY (`idsite`, `index`, `name`, `idvisit`, `idlink_va`)';
+                  KEY (`idsite`, `server_datetime`, `index`, `name`, `idvisit`, `idlink_va`)';
 
         DbHelper::createTable($this->tableName, $table);
     }

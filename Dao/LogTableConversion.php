@@ -32,6 +32,7 @@ class LogTableConversion {
         int $idVisit,
         int $idGoal,
         int $buster,
+        string $serverTime,
         string $scope,
         int $index,
         string $name,
@@ -41,10 +42,11 @@ class LogTableConversion {
 
         $this->getDb()->query(
             'INSERT INTO ' . $this->tableNamePrefixed
-                . ' (`idvisit`, `idgoal`, `buster`, `scope`, `index`, `idsite`, `name`, `value`)'
-                . ' VALUES (?,?,?,?,?,?,?,?)'
+                . ' (`idvisit`, `idgoal`, `buster`, `scope`, `index`, `idsite`, `server_datetime`, `name`, `value`)'
+                . ' VALUES (?,?,?,?,?,?,?,?,?)'
                 . ' ON DUPLICATE KEY UPDATE '
                 . ' `idsite` = ?,'
+                . ' `server_datetime` = ?,'
                 . ' `name` = ?,'
                 . ' `value` = ?',
             [
@@ -54,9 +56,11 @@ class LogTableConversion {
                 $scopeId,
                 $index,
                 $idSite,
+                $serverTime,
                 $name,
                 $value,
                 $idSite,
+                $serverTime,
                 $name,
                 $value,
             ]
@@ -70,10 +74,11 @@ class LogTableConversion {
                   `scope` SMALLINT UNSIGNED NOT NULL,
                   `index` SMALLINT UNSIGNED NOT NULL,
                   `idsite` INT UNSIGNED NOT NULL,
+                  `server_datetime` DATETIME NOT NULL,
                   `name` VARCHAR(' . CustomVariablesExtended::MAX_LENGTH_VARIABLE_NAME . ') DEFAULT NULL,
                   `value` VARCHAR(' . CustomVariablesExtended::MAX_LENGTH_VARIABLE_VALUE . ') DEFAULT NULL,
                   PRIMARY KEY (`idvisit`, `idgoal`, `buster`, `scope`, `index`),
-                  KEY (`idsite`, `index`, `name`, `scope`, `idgoal`, `idvisit`)';
+                  KEY (`idsite`, `server_datetime`, `index`, `name`, `scope`, `idgoal`, `idvisit`)';
 
         DbHelper::createTable($this->tableName, $table);
     }

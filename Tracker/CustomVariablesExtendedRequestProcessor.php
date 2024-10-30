@@ -10,6 +10,7 @@ namespace Piwik\Plugins\CustomVariablesExtended\Tracker;
 
 use Exception;
 use Piwik\Common;
+use Piwik\Date;
 use Piwik\Tracker\Action;
 use Piwik\Tracker\Request;
 use Piwik\Tracker\RequestProcessor;
@@ -49,12 +50,21 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor {
         $visitCustomVariables = $request->getMetadata('CustomVariablesExtended', 'visitCustomVariablesExtended');
 
         if (is_array($visitCustomVariables) && $visitCustomVariables) {
+
+            $lastVisitTime = $visitProperties->getProperty('visit_last_action_time');
+            if (!$lastVisitTime) {
+                $lastVisitTime = $request->getCurrentTimestamp(); // fallback in case visit_last_action_time is not set
+            }
+
+            $lastVisitTimeDate = Date::getDatetimeFromTimestamp($lastVisitTime);
+
             $logTableVisit = new LogTableVisit();
 
             foreach ($visitCustomVariables as $index => $data) {
                 $logTableVisit->insertCustomVariable(
                     $request->getIdSite(),
                     $idVisit,
+                    $lastVisitTimeDate,
                     $index,
                     $data['name'],
                     $data['value']
@@ -83,6 +93,8 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor {
                 Common::printDebug('Page level Custom Variables Extended: ');
                 Common::printDebug($customVariables);
 
+                $serverTime = Date::factory($request->getCurrentTimestamp())->getDatetime();
+
                 $logTableLinkVisitAction = new LogTableLinkVisitAction();
 
                 foreach ($customVariables as $index => $data) {
@@ -90,6 +102,7 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor {
                         $request->getIdSite(),
                         $idVisit,
                         $action->getIdLinkVisitAction(),
+                        $serverTime,
                         $index,
                         $data['name'],
                         $data['value']
@@ -101,7 +114,7 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor {
 
     /**
      * @param array{idgoal: int, buster: int} $conversion
-     * @param array{idvisit: int} $visitInformation
+     * @param array{idvisit: int, visit_last_action_time?: int } $visitInformation
      * @param \Piwik\Tracker\Request $request
      * @param \Piwik\Tracker\Action|null $action
      */
@@ -113,12 +126,21 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor {
         //
         $visitCustomVariables = $request->getMetadata('CustomVariablesExtended', 'visitCustomVariablesExtended') ?: [];
         if (is_array($visitCustomVariables) &&  $visitCustomVariables) {
+
+            $lastVisitTime = $visitInformation['visit_last_action_time'] ?? null;
+            if (!$lastVisitTime) {
+                $lastVisitTime = $request->getCurrentTimestamp(); // fallback in case visit_last_action_time is not set
+            }
+
+            $lastVisitTimeDate = Date::getDatetimeFromTimestamp($lastVisitTime);
+
             foreach ($visitCustomVariables as $index => $data) {
                 $logTableConversion->insertCustomVariable(
                     $request->getIdSite(),
                     $visitInformation['idvisit'],
                     $conversion['idgoal'],
                     $conversion['buster'],
+                    $lastVisitTimeDate,
                     CustomVariablesExtended::SCOPE_VISIT,
                     $index,
                     $data['name'],
@@ -145,12 +167,15 @@ class CustomVariablesExtendedRequestProcessor extends RequestProcessor {
                 Common::printDebug('Page level Custom Variables Extended (conversion): ');
                 Common::printDebug($customVariables);
 
+                $serverTime = Date::factory($request->getCurrentTimestamp())->getDatetime();
+
                 foreach ($customVariables as $index => $data) {
                     $logTableConversion->insertCustomVariable(
                         $request->getIdSite(),
                         $visitInformation['idvisit'],
                         $conversion['idgoal'],
                         $conversion['buster'],
+                        $serverTime,
                         CustomVariablesExtended::SCOPE_PAGE,
                         $index,
                         $data['name'],

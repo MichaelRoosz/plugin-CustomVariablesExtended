@@ -123,7 +123,7 @@ class CustomVariablesExtended extends Plugin {
 
     /**
      * @param array{idgoal: int, buster: int} $conversion
-     * @param array{idvisit: int} $visitInformation
+     * @param array{idvisit: int, visit_last_action_time?: int} $visitInformation
      * @param \Piwik\Tracker\Request $request
      * @param \Piwik\Tracker\Action|null $action
      */
@@ -200,6 +200,6 @@ class CustomVariablesExtended extends Plugin {
                 return self::SCOPE_CONVERSION;
         }
 
-        throw new Exception('Invalid scope');
+        throw new Exception('Invalid scope id');
     }
 }

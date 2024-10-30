@@ -26,22 +26,25 @@ class LogTableVisit {
         $this->tableNamePrefixed = Common::prefixTable($this->tableName);
     }
 
-    public function insertCustomVariable(int $idSite, int $idVisit, int $index, string $name, string $value): void {
+    public function insertCustomVariable(int $idSite, int $idVisit, string $serverTime, int $index, string $name, string $value): void {
         $this->getDb()->query(
             'INSERT INTO ' . $this->tableNamePrefixed
-                . ' (`idvisit`, `index`,  `idsite`, `name`, `value`)'
-                . ' VALUES (?,?,?,?,?)'
+                . ' (`idvisit`, `index`,  `idsite`, `server_datetime`, `name`, `value`)'
+                . ' VALUES (?,?,?,?,?,?)'
                 . ' ON DUPLICATE KEY UPDATE '
                 . ' `idsite` = ?,'
+                . ' `server_datetime` = ?,'
                 . ' `name` = ?,'
                 . ' `value` = ?',
             [
                 $idVisit,
                 $index,
                 $idSite,
+                $serverTime,
                 $name,
                 $value,
                 $idSite,
+                $serverTime,
                 $name,
                 $value,
             ]
@@ -71,10 +74,11 @@ class LogTableVisit {
         $table = '`idvisit` BIGINT UNSIGNED NOT NULL,
                   `index` SMALLINT UNSIGNED NOT NULL,
                   `idsite` INT UNSIGNED NOT NULL,
+                  `server_datetime` DATETIME NOT NULL,
                   `name` VARCHAR(' . CustomVariablesExtended::MAX_LENGTH_VARIABLE_NAME . ') DEFAULT NULL,
                   `value` VARCHAR(' . CustomVariablesExtended::MAX_LENGTH_VARIABLE_VALUE . ') DEFAULT NULL,
                   PRIMARY KEY (`idvisit`, `index`),
-                  KEY (`idsite`, `index`, `name`, `idvisit`)';
+                  KEY (`idsite`, `server_datetime`, `index`, `name`, `idvisit`)';
 
         DbHelper::createTable($this->tableName, $table);
     }
