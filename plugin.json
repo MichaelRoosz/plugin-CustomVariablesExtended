@@ -6,8 +6,8 @@
         "name": "Michael Roosz",
         "email": "michael.roosz@web.de"
     }],
-    "description": "This plugins provides 20 additional custom variables which do not need additional columns in the log tables (\"log_visit\", etc).",
-    "version": "1.0.0",
+    "description": "Provides 20 additional custom variables which do not need additional columns in the log tables (\"log_visit\", etc).",
+    "version": "1.0.1",
     "theme": false,
     "require": {
         "matomo": ">=5.1.1-stable,<6.0.0-b1"
