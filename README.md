@@ -2,9 +2,10 @@
 
 ## Description
 
+The standard "Custom Variables" plugin allows to use up to about 25 custom variables. Trying to use more will fail because each variable requires two dedicated columns in the log tables.
 This plugins provides 20 additional custom variables which do not need additional columns in the log tables ("log_visit", etc).
 
-They can be used just like normal custom variables and are available via the custom variabled index 101 through 120.
+They can be used just like normal custom variables and are available via the custom variable index 101 through 120.
 
 ## Installation
 
