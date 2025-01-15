@@ -17,6 +17,9 @@ GPL v3 or later
 
 ## Changelog
 
+### 5.0.1
+  - Fix version number in plugin info
+
 ### 5.0.0
   - First stable release
 
