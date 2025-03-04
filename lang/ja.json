@@ -1,5 +1,5 @@
 {
-    "CustomVariables": {
+    "CustomVariablesExtended": {
         "ColumnCustomVariableName": "カスタム変数名",
         "ColumnCustomVariableValue": "カスタム変数値",
         "CreateNewSlot": "利用可能なカスタム変数スロットの数を増やす",

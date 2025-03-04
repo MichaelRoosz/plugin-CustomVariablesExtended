@@ -1,5 +1,5 @@
 {
-    "CustomVariables": {
+    "CustomVariablesExtended": {
         "ColumnCustomVariableName": "Naam aangepaste variabele",
         "ColumnCustomVariableValue": "Waarde aangepaste variabele",
         "CreateNewSlot": "Verhoog het maximale aantal aangepaste variabelen",

@@ -1,5 +1,5 @@
 {
-    "CustomVariables": {
+    "CustomVariablesExtended": {
         "ColumnCustomVariableName": "Anpassat variabelnamn",
         "ColumnCustomVariableValue": "Anpassat variabelvärde",
         "CreateNewSlot": "Öka antalet tillgängliga anpassade variabelspår",

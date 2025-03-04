@@ -1,5 +1,5 @@
 {
-    "CustomVariables": {
+    "CustomVariablesExtended": {
         "ColumnCustomVariableName": "Özel değişken adı",
         "ColumnCustomVariableValue": "Özel değişken değeri",
         "CreateNewSlot": "Kullanılabilecek özel değişken aralıklarının sayısını arttır",

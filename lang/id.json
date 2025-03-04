@@ -1,5 +1,5 @@
 {
-    "CustomVariables": {
+    "CustomVariablesExtended": {
         "ColumnCustomVariableName": "Nama Variabel Khusus",
         "ColumnCustomVariableValue": "Nilai Variabel Khusus",
         "CreateNewSlot": "Tingkatkan jumlah slot Variabel Khusus yang tersedia",

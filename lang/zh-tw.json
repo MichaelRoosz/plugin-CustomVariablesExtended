@@ -1,5 +1,5 @@
 {
-    "CustomVariables": {
+    "CustomVariablesExtended": {
         "ColumnCustomVariableName": "自訂變數名稱",
         "ColumnCustomVariableValue": "自訂變數值",
         "CreateNewSlot": "增加自訂變數可用的欄位",

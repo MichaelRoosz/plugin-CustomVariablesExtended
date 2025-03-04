@@ -17,6 +17,9 @@ GPL v3 or later
 
 ## Changelog
 
+### 5.0.2
+  - Fix namespace of language files
+
 ### 5.0.1
   - Fix version number in plugin info
 

@@ -1,5 +1,5 @@
 {
-    "CustomVariables": {
+    "CustomVariablesExtended": {
         "ColumnCustomVariableName": "Ονομασία Προσαρμοσμένης Μεταβλητής",
         "ColumnCustomVariableValue": "Τιμή Προσαρμοσμένης Μεταβλητής",
         "CreateNewSlot": "Αυξήστε τον αριθμό των σχισμών Προσαρμοσμένων Μεταβλητών",

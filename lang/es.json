@@ -1,5 +1,5 @@
 {
-    "CustomVariables": {
+    "CustomVariablesExtended": {
         "ColumnCustomVariableName": "Nombre de la Variable Personalizada",
         "ColumnCustomVariableValue": "Valor de la Variable Personalizada",
         "CreateNewSlot": "Aumente el número de variables personalizadas disponibles",

@@ -1,5 +1,5 @@
 {
-    "CustomVariables": {
+    "CustomVariablesExtended": {
         "ColumnCustomVariableName": "Tên biến tùy chọn",
         "ColumnCustomVariableValue": "Giá trị của biến tùy chọn",
         "CustomVariables": "Các biến tùy chọn +",

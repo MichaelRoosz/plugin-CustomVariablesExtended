@@ -1,5 +1,5 @@
 {
-    "CustomVariables": {
+    "CustomVariablesExtended": {
         "ColumnCustomVariableName": "Име на променлива",
         "ColumnCustomVariableValue": "Съдържание на променлива",
         "CreateNewSlot": "Увеличете броя на наличните слотове за персонализирани променливи",
